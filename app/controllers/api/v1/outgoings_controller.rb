@@ -17,7 +17,7 @@ class Api::V1::OutgoingsController < ApplicationController
 		registration_ids = say_hello_to_friends.map{|x| x[:firebase_token]}
     @notification = {
 			title: "Hello, it's #{current_user.fullname}",
-			body: "Lets catch up over a phone call if you're free right now",
+			body: "Say Hello Back to start a call with me",
 			sound: "default"
 		}
 		options = {notification: @notification, priority: 'high', data: {outgoing: true}}
@@ -66,8 +66,6 @@ class Api::V1::OutgoingsController < ApplicationController
 
 		time_gap = 5.minutes
 		keep_showing_active = 15.minute
-
-		#friend_ids = Friendship.all.where(friend_id: current_user.id, status: "FRIENDSHIP").pluck(:user_id)
 
 		# finds Outgoings where the date created is greater than now-65min and where the user is friends with me
 		filter_date = DateTime.now.utc - 65.minutes

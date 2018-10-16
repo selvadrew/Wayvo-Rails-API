@@ -4,7 +4,7 @@ module Authenticate
   end
 
   def authenticate_with_token!
-    render json: { error: "Not Authenticated. Please logout and login again.", is_success: false}, status: :unauthorized unless current_user.present?
+    render json: { error: "Not Authenticated. Please logout and login again.", is_success: false, error_code: "logout"}, status: :unauthorized unless current_user.present?
   end
 
 
