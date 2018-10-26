@@ -5,7 +5,10 @@ Rails.application.routes.draw do
     namespace :v1 do
       post '/logout' => 'users#logout'
       post '/facebook' => 'users#facebook'
+      post '/email_signup' => 'users#email_signup'
+      post '/email_login' => 'users#email_login'
       post 'firebase_token' => 'users#store_firebase_token'
+      post 'fullname' => 'users#save_fullname'
       post '/username' => 'users#check_username'
       post '/phonenumber' => 'users#add_phone_number'
       post '/friendship' => 'friendships#create'

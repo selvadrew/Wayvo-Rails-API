@@ -1,5 +1,7 @@
 class User < ApplicationRecord
 
+	has_secure_password
+
 	has_many :friendships
 	has_many :friends, :through => :friendships
 	has_many :inverse_friendships, :class_name => "Friendship", :foreign_key => "friend_id"
@@ -13,8 +15,9 @@ class User < ApplicationRecord
 	scope :friend_requests, -> (current_user) { joins(:friendships).where(:friendships => {friend_id: current_user, status: "WAITING"}).pluck(:fullname, :username, 'friendships.created_at', 'friendships.id').map { |fullname, username, created_at, id| {fullname: fullname, username: username, created_at: created_at, id: id}} }
 
 
-	validates :username, format: { with: /\A[a-zA-Z0-9]{3,15}\z/ }, allow_nil: true
+	validates :username, format: { with: /\A[a-zA-Z0-9]{3,15}\z/ }, allow_nil: true, uniqueness: true
 	validates :phone_number, format: { with: /\A[0-9]{10}\z/ }, allow_nil: true
+	validates :email, uniqueness: true
 
 
 
