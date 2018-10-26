@@ -1,5 +1,5 @@
 class Api::V1::UsersController < ApplicationController
-  before_action :authenticate_with_token!, only: [:logout, :check_username, :add_phone_number, :get_phone_number, :store_firebase_token]
+  before_action :authenticate_with_token!, only: [:logout, :check_username, :add_phone_number, :get_phone_number]
 
   def facebook
     if params[:facebook_access_token]
