@@ -62,7 +62,7 @@ class Api::V1::UsersController < ApplicationController
         end
       end
     else 
-      render json: { is_success: false }, status: 422
+      render json: { error: "Sorry, something went wrong.", is_success: false }, status: 422
     end
   end
 

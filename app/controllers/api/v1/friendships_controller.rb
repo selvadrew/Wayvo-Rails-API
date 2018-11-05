@@ -174,10 +174,12 @@ class Api::V1::FriendshipsController < ApplicationController
 
   def rejected
 
-    @friendship = Friendship.where(
-      "user_id = ? AND friend_id = ?",
-      params[:user_id], current_user.id
-    ).first
+    # @friendship = Friendship.where(
+    #   "user_id = ? AND friend_id = ?",
+    #   params[:user_id], current_user.id
+    # ).first
+
+    @friendship = Friendship.find_by(id: params[:user_id])
 
     if @friendship.status == "WAITING"
       @friendship.status = "REJECTED"
