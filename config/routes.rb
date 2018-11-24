@@ -20,6 +20,10 @@ Rails.application.routes.draw do
       post 'last_connected' => 'outgoings#last_connected'
       post 'get_phone_number' => 'users#get_phone_number'
       post '/feedback' => 'feedbacks#create'
+      post '/receive_notifications' => 'friendships#receive_notifications'
+      post '/send_notifications' => 'friendships#send_notifications'
+      post 'tester' => 'outgoings#tester'
+
 
 
       resources :friendships

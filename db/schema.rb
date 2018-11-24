@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20181019044437) do
+ActiveRecord::Schema.define(version: 20181121060253) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -37,6 +37,9 @@ ActiveRecord::Schema.define(version: 20181019044437) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "status"
+    t.boolean "receive_notifications", default: true
+    t.boolean "send_notifications", default: true
+    t.boolean "user_receive_notifications", default: true
   end
 
   create_table "outgoings", force: :cascade do |t|
@@ -60,6 +63,7 @@ ActiveRecord::Schema.define(version: 20181019044437) do
     t.string "username"
     t.string "firebase_token"
     t.string "password_digest"
+    t.boolean "iOS", default: false
   end
 
   add_foreign_key "acceptors", "outgoings"

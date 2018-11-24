@@ -160,8 +160,9 @@ class Api::V1::UsersController < ApplicationController
   def get_phone_number
 
     user = User.find_by(access_token: params[:access_token])
+    user.iOS = params[:ios]
 
-    if user.phone_number
+    if user.phone_number && user.save 
       render json: {is_success: true, fullname: user.fullname, phone_number: user.phone_number, username: user.username }
     else
       render json: {is_success: false}, status: 404

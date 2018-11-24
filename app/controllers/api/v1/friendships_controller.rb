@@ -55,6 +55,8 @@ class Api::V1::FriendshipsController < ApplicationController
           if check_inverse_friendship == 1 
             @friendship.status = "FRIENDSHIP"
             @inverse_friendship.status = "FRIENDSHIP"
+            @friendship.receive_notifications = @inverse_friendship.user_receive_notifications
+            @friendship.user_receive_notifications = @inverse_friendship.receive_notifications
             @inverse_friendship.save 
           else
             @friendship.status = "WAITING"
@@ -133,21 +135,22 @@ class Api::V1::FriendshipsController < ApplicationController
       render json: { is_success: false}, status: :ok
     else
 
-      @friend_ids = []
+      @friend_details = []
       @related_friendships.each do |friendships|
-        ting = friendships.friend_id
-        @friend_ids << ting
-        end 
+        details = []
+        details.push(friendships.friend_id, friendships.send_notifications, friendships.user_receive_notifications)
+        @friend_details << details
+      end 
 
       @friends = []
-      @friend_ids.each do |friends| 
-        @user = User.find_by(id: friends)
-        @friends_list = { id: @user.id, fullname: @user.fullname, username: @user.username, phone_number: @user.phone_number }
+      @friend_details.each do |id, send_notif, receive_notif| 
+        @user = User.find_by(id: id)
+        @friends_list = { id: @user.id, fullname: @user.fullname, username: @user.username, phone_number: @user.phone_number, send_notifications: send_notif, receive_notifications: receive_notif }
         insert = @friends_list
         @friends << insert 
       end
 
-      @friends.sort_by! { |x| x[:fullname].downcase }
+      @friends.sort_by! { |x| x[:fullname] }
 
       render json: {friends: @friends, is_success: true}, status: :ok
 
@@ -173,12 +176,6 @@ class Api::V1::FriendshipsController < ApplicationController
 
 
   def rejected
-
-    # @friendship = Friendship.where(
-    #   "user_id = ? AND friend_id = ?",
-    #   params[:user_id], current_user.id
-    # ).first
-
     @friendship = Friendship.find_by(id: params[:user_id])
 
     if @friendship.status == "WAITING"
@@ -195,9 +192,65 @@ class Api::V1::FriendshipsController < ApplicationController
   end
 
 
+  #do I want to receive notifications - my ID is the friend_id 
+  def receive_notifications
+    @friendship = Friendship.where(
+      "user_id = ? AND friend_id = ?",
+      params[:user_id], current_user.id
+    ).first
+
+    @inverse_friendship = Friendship.where(
+      "user_id = ? AND friend_id = ?",
+      current_user.id, params[:user_id]
+    ).first
+
+    if @inverse_friendship 
+      @inverse_friendship.user_receive_notifications = params[:toggled_option]
+    end
+
+    if @friendship
+      @friendship.receive_notifications = params[:toggled_option]
+    end
+
+    if @inverse_friendship
+      if @friendship
+        if @friendship.save && @inverse_friendship.save
+          render json: {is_success: true}, status: :ok
+        else
+          render json: { is_success: false}, status: :ok
+        end
+      else 
+        if @inverse_friendship.save
+          render json: {is_success: true}, status: :ok
+        else
+          render json: { is_success: false}, status: :ok
+        end
+      end
+
+    else 
+      if @friendship.save
+        render json: {is_success: true}, status: :ok
+      else
+        render json: { is_success: false}, status: :ok
+      end
+    end
+  end
+
+  #does the friend want to send me notifications - it is set by the friend, thats why the friend_id is from params
+  def send_notifications
+    @friendship = Friendship.where(
+      "user_id = ? AND friend_id = ?",
+      current_user.id, params[:user_id]
+    ).first
+
+    @friendship.send_notifications = params[:toggled_option]
+    if @friendship.save 
+      render json: {is_success: true}, status: :ok
+    else
+      render json: { is_success: false}, status: :ok
+    end
+  end
+
       
-
-
-
 
 end

@@ -7,7 +7,7 @@ class Api::V1::OutgoingsController < ApplicationController
 		fcm = FCM.new("AAAAAOXsHmg:APA91bFeO5xEEP3Zqkg1Ht3ocwzphQ9uEFGdUHHbRsGHAaVSqEXdJWAUo026ENDbFKJ6Sxy7UFRBYmm-ZH6NOkBGRbZvWhWtm8beW0lRtJivIdoExzfkiYk5QWj98kfTB9-sE4gD6oX-")
 
 		#queries 
-		say_hello_to_friends = User.friendship_status(current_user)
+		say_hello_to_friends = User.contacts_get_notified(current_user)
 		friends_added = Friendship.where(user_id: current_user).first 
 		last_hello = Outgoing.where(user_id: current_user.id).last
 
@@ -26,7 +26,7 @@ class Api::V1::OutgoingsController < ApplicationController
 		@outgoing.seconds = params[:seconds]
 
 		# you can only say hello every... 
-		time_gap = 15.minutes
+		time_gap = 0.minutes
 		time_gap_string = "15 minutes"
 
 		active_gap = 5.minutes
@@ -51,7 +51,7 @@ class Api::V1::OutgoingsController < ApplicationController
 		  case can_call
 				when true
 			    if @outgoing.save && response = fcm.send(registration_ids, options)
-			      render json: {last_said_hello: @outgoing.created_at, countdown_timer: @outgoing.seconds, is_success: true}, status: :ok
+			      render json: {last_said_hello: @outgoing.created_at, countdown_timer: @outgoing.seconds, is_success: true, test: say_hello_to_friends }, status: :ok
 			    else
 			      render json: { error: "Can't say hello right now", is_success: false}, status: 404
 			    end
@@ -69,7 +69,7 @@ class Api::V1::OutgoingsController < ApplicationController
 
 		# finds Outgoings where the date created is greater than now-65min and where the user is friends with me
 		filter_date = DateTime.now.utc - 65.minutes
-		latest_outgoings = Outgoing.where("created_at > ?", filter_date).where(user_id: Friendship.all.where(friend_id: current_user, status: "FRIENDSHIP").pluck(:user_id)).order(:created_at)
+		latest_outgoings = Outgoing.where("created_at > ?", filter_date).where(user_id: Friendship.all.where(friend_id: current_user, status: "FRIENDSHIP", receive_notifications: true, send_notifications: true ).pluck(:user_id)).order(:created_at)
 
 
 		active_output = []
@@ -98,7 +98,7 @@ class Api::V1::OutgoingsController < ApplicationController
 				connected = false
 			end
 
-			call_details = {outgoing_id: outgoing.id , fullname: @user.fullname, phone_number: @user.phone_number, active: active, connected: connected}
+			call_details = {outgoing_id: outgoing.id , fullname: @user.fullname, phone_number: @user.phone_number, ios: @user.iOS, active: active, connected: connected}
 			if call_details[:active] || call_details[:connected]
 				active_output << call_details
 			end
@@ -173,8 +173,14 @@ class Api::V1::OutgoingsController < ApplicationController
 		else
 			render json: {error: "error", is_success: false}, status: 404
 		end
-				
+	end
 
+
+	def tester
+		a = User.contacts_get_notified(current_user)
+		b = User.friendship_status(current_user)
+
+		render json: {data: a, other: b}
 	end
 
 
