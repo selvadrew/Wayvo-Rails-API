@@ -26,7 +26,7 @@ class Api::V1::OutgoingsController < ApplicationController
 		@outgoing.seconds = params[:seconds]
 
 		# you can only say hello every... 
-		time_gap = 0.minutes
+		time_gap = 15.minutes
 		time_gap_string = "15 minutes"
 
 		active_gap = 5.minutes
