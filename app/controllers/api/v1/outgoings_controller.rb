@@ -1,5 +1,6 @@
 class Api::V1::OutgoingsController < ApplicationController
 	before_action :authenticate_with_token!
+	# before_action :anyone_active, only: [:create]
 	
 
 	def create
@@ -13,11 +14,48 @@ class Api::V1::OutgoingsController < ApplicationController
 
 		friends = say_hello_to_friends.map{|x| x[:fullname]}
 
+
+		#check if anyone is active 
+		filter_date = DateTime.now.utc - 65.minutes
+		latest_outgoings = Outgoing.where("created_at > ?", filter_date).where(user_id: Friendship.all.where(friend_id: current_user, status: "FRIENDSHIP", receive_notifications: true, send_notifications: true ).pluck(:user_id)).order(:created_at)
+
+		active_output = []
+		latest_outgoings.each do |outgoing|
+
+			@got_accepted = Acceptor.find_by(outgoing_id: outgoing.id)
+			if @got_accepted 
+				#connected with someone  
+				allowed = true
+			else 
+				if (DateTime.now.utc - outgoing.seconds) > outgoing.created_at == true
+					# Created at ... Now - 10min 
+					#if not connected and outgoing created_at is greater than now minus outgoing seconds 
+					allowed = true
+				else 
+					allowed = false 
+				end
+			end
+
+			call_details = {allowed: allowed}
+			unless allowed
+				active_output << call_details
+			end
+		end
+
+	    if active_output.count === 0
+	    	@allowed = true
+	    else
+	      	@allowed = false 
+	    end
+
+
+
 		#notification content
 		registration_ids = say_hello_to_friends.map{|x| x[:firebase_token]}
     @notification = {
 			title: "Hello, it's #{current_user.fullname}",
-			body: "Say Hello Back to start a call with me",
+			#body: "Say Hello Back to start a call with me",
+			body: "Let's catch up if you're free right now. Say Hello Back to start a call with me.",
 			sound: "default"
 		}
 		options = {notification: @notification, priority: 'high', data: {outgoing: true}}
@@ -44,20 +82,23 @@ class Api::V1::OutgoingsController < ApplicationController
 			wait_time = (time_gap.to_i - (last_time_formatted - DateTime.now.utc).to_i.abs) / 60
 		end
 
-
-		unless friends_added
-			render json: { error: "You don't have contacts to Say Hello to. Start adding contacts by username.", is_success: false}, status: :ok
-		else
-		  case can_call
-				when true
-			    if @outgoing.save && response = fcm.send(registration_ids, options)
-			      render json: {last_said_hello: @outgoing.created_at, countdown_timer: @outgoing.seconds, is_success: true, test: say_hello_to_friends }, status: :ok
-			    else
-			      render json: { error: "Can't say hello right now", is_success: false}, status: 404
-			    end
-				else			
-				  render json: { error: "Sorry, you can only Say Hello every #{time_gap_string}. Try again in #{wait_time} minutes.", time: wait_time, is_success: false}, status: :ok
+		if @allowed 
+			unless friends_added
+				render json: { error: "You don't have contacts to Say Hello to. Start adding contacts by username.", contact_is_live: false, is_success: false}, status: :ok
+			else
+			  case can_call
+					when true
+				    if @outgoing.save && response = fcm.send(registration_ids, options)
+				      render json: {last_said_hello: @outgoing.created_at, countdown_timer: @outgoing.seconds, is_success: true, test: say_hello_to_friends }, status: :ok
+				    else
+				      render json: { error: "Can't Say Hello right now", contact_is_live: false, is_success: false}, status: 404
+				    end
+					else			
+					  render json: { error: "Sorry, you can only Say Hello every #{time_gap_string}. Try again in #{wait_time} minutes.", time: wait_time, contact_is_live: false, is_success: false}, status: :ok
+				end
 			end
+		else 
+			render json: { error: "You can't Say Hello when a contact is live, Say Hello Back to them instead.", contact_is_live: true, is_success: false}, status: :ok
 		end
 	end
 
@@ -182,6 +223,46 @@ class Api::V1::OutgoingsController < ApplicationController
 
 		render json: {data: a, other: b}
 	end
+
+
+
+	# private 
+		# def anyone_active
+		# # finds Outgoings where the date created is greater than now-65min and where the user is friends with me
+		# filter_date = DateTime.now.utc - 65.minutes
+		# latest_outgoings = Outgoing.where("created_at > ?", filter_date).where(user_id: Friendship.all.where(friend_id: current_user, status: "FRIENDSHIP", receive_notifications: true, send_notifications: true ).pluck(:user_id)).order(:created_at)
+
+
+		# active_output = []
+		# latest_outgoings.each do |outgoing|
+		# 	@user = User.find_by(id: outgoing.user_id)
+
+		# 	@got_accepted = Acceptor.find_by(outgoing_id: outgoing.id)
+		# 	if @got_accepted 
+		# 		#connected with someone  
+		# 		allowed = true
+		# 	else 
+		# 		if (DateTime.now.utc - outgoing.seconds) > outgoing.created_at == true
+		# 			# Created at ... Now - 10min 
+		# 			#if not connected and outgoing created_at is greater than now minus outgoing seconds 
+		# 			allowed = true
+		# 		else 
+		# 			allowed = false 
+		# 		end
+		# 	end
+
+		# 	call_details = {fullname: @user.fullname, allowed: allowed}
+		# 	if call_details[:allowed] 
+		# 		active_output << call_details
+		# 	end
+		# end
+
+	 #    if active_output.count === 0
+	 #    	@allowed = true
+	 #    else
+	 #      	@allowed = false 
+	 #    end
+		# end
 
 
 end
