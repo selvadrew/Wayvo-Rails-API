@@ -73,7 +73,7 @@ class Api::V1::FriendshipsController < ApplicationController
           end
 
         else
-          render json: { error: "#{friend_name} is already a contact", is_success: false}, status: 404
+          render json: { error: "#{friend_name} is already a friend", is_success: false}, status: 404
         end
       end
 

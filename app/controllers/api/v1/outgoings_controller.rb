@@ -98,7 +98,7 @@ class Api::V1::OutgoingsController < ApplicationController
 				end
 			end
 		else 
-			render json: { error: "You can't Say Hello when a contact is live, Say Hello Back to them instead.", contact_is_live: true, is_success: false}, status: :ok
+			render json: { error: "You can't Say Hello when a friend is live, Say Hello Back to them instead.", contact_is_live: true, is_success: false}, status: :ok
 		end
 	end
 
