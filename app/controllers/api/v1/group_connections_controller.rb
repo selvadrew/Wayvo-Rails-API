@@ -122,36 +122,40 @@ class Api::V1::GroupConnectionsController < ApplicationController
 
   def check_active_groups
     # checks if any groups are live on the live screen 
+    if current_user.verified 
+      # if group was active within 20 minutes, show it 
 
-    # if group was active within 20 minutes, show it 
+      #find friend user ids, connected with already from same group, and all group members excluding self
+      #friends
+      friends = Friendship.all.where(user_id: current_user.id).pluck(:friend_id)
+      friends2 = Friendship.all.where(friend_id: current_user.id).pluck(:user_id)
+      #all group members with current user removed 
+      #group connections
+      group_connections_a = GroupConnection.all.where(outgoing_user_id: current_user.id).where.not(acceptor_user_id: nil).pluck(:acceptor_user_id)
+      group_connections_b = GroupConnection.all.where(acceptor_user_id: current_user.id).pluck(:outgoing_user_id)
+      group_connections = group_connections_a + group_connections_b
 
-    #find friend user ids, connected with already from same group, and all group members excluding self
-    #friends
-    friends = Friendship.all.where(user_id: current_user.id).pluck(:friend_id)
-    friends2 = Friendship.all.where(friend_id: current_user.id).pluck(:user_id)
-    #all group members with current user removed 
-    #group connections
-    group_connections_a = GroupConnection.all.where(outgoing_user_id: current_user.id).where.not(acceptor_user_id: nil).pluck(:acceptor_user_id)
-    group_connections_b = GroupConnection.all.where(acceptor_user_id: current_user.id).pluck(:outgoing_user_id)
-    group_connections = group_connections_a + group_connections_b
+      filter_is_active = friends + friends2 + group_connections + [current_user.id]
 
-    filter_is_active = friends + friends2 + group_connections + [current_user.id]
+      # was group active within 20 minutes 
+      filter_time = DateTime.now.utc - 10.minutes
+      program_id = ProgramGroupMember.find_by(user_id: current_user.id).program_id
+      program_name = Program.find_by(id: program_id).program_name
+      is_active = GroupConnection.all.where("created_at > ?", filter_time).where(program_id: program_id).where.not(outgoing_user_id: filter_is_active)
+      program_details = { program_name: program_name, program_id: program_id }
 
-    # was group active within 20 minutes 
-    filter_time = DateTime.now.utc - 10.minutes
-    program_id = ProgramGroupMember.find_by(user_id: current_user.id).program_id
-    program_name = Program.find_by(id: program_id).program_name
-    is_active = GroupConnection.all.where("created_at > ?", filter_time).where(program_id: program_id).where.not(outgoing_user_id: filter_is_active)
-    program_details = { program_name: program_name, program_id: program_id }
+      # was connected within last 10 minutes - still show the group 
+      already_connected = GroupConnection.where("created_at > ?", filter_time).where(program_id: program_id, acceptor_user_id: current_user.id).first
 
-    # was connected within last 10 minutes - still show the group 
-    already_connected = GroupConnection.where("created_at > ?", filter_time).where(program_id: program_id, acceptor_user_id: current_user.id).first
+      if is_active.count > 0 || already_connected
+        render json: { program_details: program_details, is_success: true }, status: :ok  
 
-    if is_active.count > 0 || already_connected
-      render json: { program_details: program_details, is_success: true }, status: :ok  
+      else
+        render json: { is_success: false }, status: :ok  
+      end
 
-    else
-      render json: { is_success: false }, status: :ok  
+    else 
+       render json: { is_success: false }, status: :ok  
     end
 
   end
