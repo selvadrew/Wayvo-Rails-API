@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20181121060253) do
+ActiveRecord::Schema.define(version: 20190122003948) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -42,12 +42,45 @@ ActiveRecord::Schema.define(version: 20181121060253) do
     t.boolean "user_receive_notifications", default: true
   end
 
+  create_table "group_connections", force: :cascade do |t|
+    t.bigint "program_id"
+    t.integer "outgoing_user_id"
+    t.integer "acceptor_user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["program_id"], name: "index_group_connections_on_program_id"
+  end
+
   create_table "outgoings", force: :cascade do |t|
     t.bigint "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "seconds"
     t.index ["user_id"], name: "index_outgoings_on_user_id"
+  end
+
+  create_table "program_group_members", force: :cascade do |t|
+    t.bigint "program_id"
+    t.integer "user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["program_id"], name: "index_program_group_members_on_program_id"
+  end
+
+  create_table "programs", force: :cascade do |t|
+    t.string "program_name"
+    t.bigint "university_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["university_id"], name: "index_programs_on_university_id"
+  end
+
+  create_table "universities", force: :cascade do |t|
+    t.string "university_name"
+    t.string "university_country"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.boolean "university", default: true
   end
 
   create_table "users", force: :cascade do |t|
@@ -64,9 +97,18 @@ ActiveRecord::Schema.define(version: 20181121060253) do
     t.string "firebase_token"
     t.string "password_digest"
     t.boolean "iOS", default: false
+    t.string "instagram"
+    t.string "snapchat"
+    t.string "twitter"
+    t.integer "enrollment_date"
+    t.boolean "verified"
+    t.boolean "submitted"
   end
 
   add_foreign_key "acceptors", "outgoings"
   add_foreign_key "feedbacks", "users"
+  add_foreign_key "group_connections", "programs"
   add_foreign_key "outgoings", "users"
+  add_foreign_key "program_group_members", "programs"
+  add_foreign_key "programs", "universities"
 end

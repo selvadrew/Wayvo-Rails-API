@@ -163,7 +163,19 @@ class Api::V1::UsersController < ApplicationController
     user.iOS = params[:ios]
 
     if user.phone_number && user.save 
-      render json: {is_success: true, fullname: user.fullname, phone_number: user.phone_number, username: user.username }
+      render json: {
+        is_success: true, 
+        fullname: user.fullname, 
+        phone_number: user.phone_number, 
+        username: user.username, 
+        instagram: user.instagram || "false",
+        snapchat: user.snapchat || "false",
+        twitter: user.twitter || "false",
+        #firebase_token: user.firebase_token, gonna call firebase every time app opens up for now 
+        enrollment: user.enrollment_date || "false", 
+        verified: user.verified,
+        submitted: user.submitted 
+      }
     else
       render json: {is_success: false}, status: 404
     end

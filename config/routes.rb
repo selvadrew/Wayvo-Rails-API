@@ -23,6 +23,14 @@ Rails.application.routes.draw do
       post '/receive_notifications' => 'friendships#receive_notifications'
       post '/send_notifications' => 'friendships#send_notifications'
       post 'tester' => 'outgoings#tester'
+      post 'universities' => 'universities#get_university'
+      post 'programs' => 'universities#get_program'
+      post 'request_to_join_program' => 'program_group_members#request_to_join_program'
+      post 'get_program_group' => 'program_group_members#get_program_group'
+      post 'said_hello_groups' => 'group_connections#said_hello_groups'
+      post 'check_active_groups' => 'group_connections#check_active_groups'
+      post 'said_hello_back_groups' => 'group_connections#said_hello_back_groups'
+      post 'connected_users' => 'group_connections#connected_users'
 
 
 
@@ -31,6 +39,7 @@ Rails.application.routes.draw do
       resources :outgoings
       resources :acceptors
       resources :feedbacks
+      resources :group_connections
     end
 
 

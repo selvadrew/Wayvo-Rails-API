@@ -1,0 +1,11 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  program: one
+  outgoing_user_id: 1
+  acceptor_user_id: 1
+
+two:
+  program: two
+  outgoing_user_id: 1
+  acceptor_user_id: 1

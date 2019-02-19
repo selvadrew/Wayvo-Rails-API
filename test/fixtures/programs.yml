@@ -1,0 +1,9 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  program_name: MyString
+  university: one
+
+two:
+  program_name: MyString
+  university: two
