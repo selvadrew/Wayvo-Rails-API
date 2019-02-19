@@ -34,17 +34,22 @@ class Api::V1::ProgramGroupMembersController < ApplicationController
   end #def
 
   def get_program_group
-    program = ProgramGroupMember.find_by(user_id: current_user.id)
-    
-    if program 
+    if current_user.verified 
+      program = ProgramGroupMember.find_by(user_id: current_user.id)
       program_obj = program.program
       program_details = [{id: program_obj.id, value: program_obj.program_name, type: 0  }]
       university_name = program.program.university.university_name
+
+      if program 
+        render json: {is_success: true, program_details: program_details, university_name: university_name }, status: :ok
+      else
+        render json: { is_success: false}, status: :ok
+      end
       
-      render json: {is_success: true, program_details: program_details, university_name: university_name }, status: :ok
     else
       render json: { is_success: false}, status: :ok
     end
+
 
   end
 
