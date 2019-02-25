@@ -21,7 +21,7 @@ class Api::V1::GroupConnectionsController < ApplicationController
     group_connections = group_connections_a + group_connections_b
 
     minutes = 10 # minutes someone will be active in group - used to check if someone is active for user to say hello
-    hours = 0 # hours someone has to wait to say hello to group again 
+    hours = 2 # hours someone has to wait to say hello to group again 
     filter_time = DateTime.now.utc - minutes.minutes
     filter_user_time = DateTime.now.utc - hours.hours 
     
@@ -79,7 +79,7 @@ class Api::V1::GroupConnectionsController < ApplicationController
         registration_ids = notification_list_firebase
         @notification = {
             title: "Make a new friend!",
-            body: "Someone in #{program.program_name} says hello.",
+            body: "Someone in #{program.program_name} says hello",
             sound: "default"
           }
         options = {notification: @notification, priority: 'high', data: {outgoing: true}}
@@ -221,8 +221,8 @@ class Api::V1::GroupConnectionsController < ApplicationController
         #notification data 
         registration_ids = [connected_to.firebase_token]
         @notification = {
-            title: "Expect a call shortly.",
-            body: "Someone in #{program.program_name} said hello back.",
+            title: "Expect a call shortly",
+            body: "Someone in #{program.program_name} said hello back",
             sound: "default"
           }
         options = {notification: @notification, priority: 'high', data: {expect_group_call: true}}
