@@ -32,8 +32,8 @@ class Api::V1::GroupConnectionsController < ApplicationController
     #removes friends, group connections, and self from active list so user can still say hello to group 
     filter_active = group_active_exists - friends - friends2 - group_connections - [@user.id]
 
-    if friends.count < 3 
-      render json: {error: "You need at least 3 friends from your school in your Friends list to use this feature. Invite your friends to Wayvo :)", is_success: false, get_more_friends: true }, status: :ok
+    if friends.count < 1 
+      render json: {error: "You need at least 1 friend from your school in your Friends list to use this feature. Invite a friend to Wayvo :)", is_success: false, get_more_friends: true }, status: :ok
 
     elsif filter_active.count > 0
       render json: {error: "You can't Say Hello when someone in the group is live, Say Hello Back instead.", group_is_live: true, is_success: false}, status: :ok
