@@ -37,8 +37,11 @@ class Api::V1::ProgramGroupMembersController < ApplicationController
     if current_user.verified 
       program = ProgramGroupMember.find_by(user_id: current_user.id)
       program_obj = program.program
-      program_details = [{id: program_obj.id, value: program_obj.program_name, type: 0  }]
+      program_details = [{id: program_obj.id, value: program_obj.program_name, type: 0, status: true, secretUsername: false }]
       university_name = program.program.university.university_name
+
+      @groups = CustomGroup.joins(:custom_group_member).where(custom_group_members: {user_id: current_user.id}).pluck(:name, :id, :status, :username).map {|name, id, status, secret_username| {id: id, value: name, type: 1, status: status, secretUsername: secret_username }}
+      program_details = program_details + @groups
 
       if program 
         render json: {is_success: true, program_details: program_details, university_name: university_name }, status: :ok
@@ -49,7 +52,6 @@ class Api::V1::ProgramGroupMembersController < ApplicationController
     else
       render json: { is_success: false}, status: :ok
     end
-
 
   end
 

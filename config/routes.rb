@@ -31,7 +31,15 @@ Rails.application.routes.draw do
       post 'check_active_groups' => 'group_connections#check_active_groups'
       post 'said_hello_back_groups' => 'group_connections#said_hello_back_groups'
       post 'connected_users' => 'group_connections#connected_users'
-
+      post 'create_group' => 'custom_groups#create'
+      post 'get_custom_groups' => 'custom_group_members#get_custom_groups'
+      post 'search_groups' => 'custom_group_members#search_groups'
+      post 'request_to_join' => 'custom_group_members#request_to_join'
+      post 'get_all_custom_group_data' => 'custom_group_members#get_all_custom_group_data'
+      post 'add_to_group' => 'custom_group_members#add_to_group'
+      post 'deny_to_group' => 'custom_group_members#deny_to_group'
+      post 'check_active_custom_groups' => 'custom_group_connections#check_active_custom_groups'
+      post 'said_hello_back_custom_group' => 'custom_group_connections#said_hello_back_custom_group'
 
 
       resources :friendships
@@ -40,6 +48,7 @@ Rails.application.routes.draw do
       resources :acceptors
       resources :feedbacks
       resources :group_connections
+      resources :custom_group_connections
     end
 
 

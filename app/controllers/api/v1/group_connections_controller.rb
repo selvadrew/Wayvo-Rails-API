@@ -107,15 +107,16 @@ class Api::V1::GroupConnectionsController < ApplicationController
     countdown_timer = minutes * 60 
     filter_time = DateTime.now.utc - minutes.minutes
 
-    last_said_hello = GroupConnection.where("created_at > ?", filter_time).where(outgoing_user_id: current_user.id, acceptor_user_id: nil).last
+    last_said_hello_program = GroupConnection.where("created_at > ?", filter_time).where(outgoing_user_id: current_user.id, acceptor_user_id: nil).last
+    last_said_hello_custom_group = CustomGroupConnection.where("created_at > ?", filter_time).where(outgoing_user_id: current_user.id, acceptor_user_id: nil).last
 
-    if last_said_hello
-      render json: { last_said_hello: last_said_hello.created_at, countdown_timer: countdown_timer, is_success: true }, status: :ok 
+    if last_said_hello_program
+      render json: { last_said_hello: last_said_hello_program.created_at, countdown_timer: countdown_timer, is_success: true }, status: :ok 
+    elsif last_said_hello_custom_group
+      render json: { last_said_hello: last_said_hello_custom_group.created_at, countdown_timer: countdown_timer, is_success: true }, status: :ok 
     else
       render json: { is_success: false }, status: :ok 
     end
-
-    
   end
 
 
@@ -123,8 +124,8 @@ class Api::V1::GroupConnectionsController < ApplicationController
   def check_active_groups
     # checks if any groups are live on the live screen 
     if current_user.verified 
-      # if group was active within 20 minutes, show it 
 
+      ########################## PROGRAM GROUP ##########################
       #find friend user ids, connected with already from same group, and all group members excluding self
       #friends
       friends = Friendship.all.where(user_id: current_user.id).pluck(:friend_id)
@@ -147,8 +148,56 @@ class Api::V1::GroupConnectionsController < ApplicationController
       # was connected within last 10 minutes - still show the group 
       already_connected = GroupConnection.where("created_at > ?", filter_time).where(program_id: program_id, acceptor_user_id: current_user.id).first
 
-      if is_active.count > 0 || already_connected
-        render json: { program_details: program_details, is_success: true }, status: :ok  
+
+      ########################## CUSTOM GROUPS ##########################
+      # get all custom groups the user is part of 
+      all_groups_user_is_in = CustomGroupMember.all.where(user_id: current_user.id, status: true, notifications: true, blocked: false).pluck(:custom_group_id)
+
+      #get all custom group connections 
+      all_custom_connections = []
+      all_groups_user_is_in.each do |custom_group_id|
+        custom_group_connections_a = CustomGroupConnection.all.where(custom_group_id: custom_group_id, outgoing_user_id: current_user.id).where.not(acceptor_user_id: nil).pluck(:acceptor_user_id)
+        custom_group_connections_b = CustomGroupConnection.all.where(custom_group_id: custom_group_id, acceptor_user_id: current_user.id).pluck(:outgoing_user_id)
+        ignore_recent_connection = CustomGroupConnection.all.where(custom_group_id: custom_group_id, acceptor_user_id: current_user.id).where("created_at > ?", filter_time).pluck(:outgoing_user_id)
+        custom_group_connections = custom_group_connections_a + custom_group_connections_b - ignore_recent_connection
+        all_custom_connections << custom_group_connections if custom_group_connections.present?
+      end
+
+      # figure out all people user cant connect to = adding friends and all group connections 
+      cant_connect_to = friends + friends2 + all_custom_connections.flatten + [current_user.id]
+
+      # find all the groups that are active
+     
+      custom_is_active = CustomGroupConnection.all.where("created_at > ?", filter_time).where(custom_group_id: all_groups_user_is_in).where.not(outgoing_user_id: cant_connect_to.uniq)
+
+      live_custom_group_details = []
+      custom_is_active.each do |active| 
+        @user = User.find_by(id: active.outgoing_user_id)
+        connected = active.acceptor_user_id == current_user.id
+        call_details = {
+          outgoing_id: active.id , 
+          group_name: CustomGroup.find_by(id: active.custom_group_id).name, 
+          phone_number: @user.phone_number, 
+          ios: @user.iOS, 
+          active: true, 
+          connected: connected
+        }
+        live_custom_group_details << call_details
+      end
+
+      #sets it to false if it doesnt exist to make it easier to handle in the front end 
+      unless already_connected
+        program_details = false if is_active.count == 0 
+      end
+      live_custom_group_details = false unless live_custom_group_details.present?
+
+      if is_active.count > 0 || already_connected || live_custom_group_details.present?
+        render json: { 
+          program_details: program_details, 
+          live_custom_group_details: live_custom_group_details, 
+          is_success: true 
+        }, 
+          status: :ok  
 
       else
         render json: { is_success: false }, status: :ok  

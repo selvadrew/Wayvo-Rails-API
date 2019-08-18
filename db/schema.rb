@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190122003948) do
+ActiveRecord::Schema.define(version: 20190709124315) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -21,6 +21,36 @@ ActiveRecord::Schema.define(version: 20190122003948) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["outgoing_id"], name: "index_acceptors_on_outgoing_id"
+  end
+
+  create_table "custom_group_connections", force: :cascade do |t|
+    t.bigint "custom_group_id"
+    t.integer "outgoing_user_id"
+    t.integer "acceptor_user_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["custom_group_id"], name: "index_custom_group_connections_on_custom_group_id"
+  end
+
+  create_table "custom_group_members", force: :cascade do |t|
+    t.bigint "custom_group_id"
+    t.integer "user_id"
+    t.boolean "status"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.boolean "notifications"
+    t.boolean "blocked", default: false
+    t.index ["custom_group_id"], name: "index_custom_group_members_on_custom_group_id"
+  end
+
+  create_table "custom_groups", force: :cascade do |t|
+    t.bigint "user_id"
+    t.string "name"
+    t.string "username"
+    t.text "description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_custom_groups_on_user_id"
   end
 
   create_table "feedbacks", force: :cascade do |t|
@@ -64,6 +94,7 @@ ActiveRecord::Schema.define(version: 20190122003948) do
     t.integer "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "notifications"
     t.index ["program_id"], name: "index_program_group_members_on_program_id"
   end
 
@@ -106,6 +137,9 @@ ActiveRecord::Schema.define(version: 20190122003948) do
   end
 
   add_foreign_key "acceptors", "outgoings"
+  add_foreign_key "custom_group_connections", "custom_groups"
+  add_foreign_key "custom_group_members", "custom_groups"
+  add_foreign_key "custom_groups", "users"
   add_foreign_key "feedbacks", "users"
   add_foreign_key "group_connections", "programs"
   add_foreign_key "outgoings", "users"
