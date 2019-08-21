@@ -84,7 +84,7 @@ class Api::V1::OutgoingsController < ApplicationController
 
 		if @allowed 
 			unless friends_added
-				render json: { error: "You don't have friends to Say Hello to. Start adding friends by username.", contact_is_live: false, is_success: false}, status: :ok
+				render json: { error: "You don't have friends to Say Hello to. Start adding friends by their username.", contact_is_live: false, is_success: false}, status: :ok
 			else
 			  case can_call
 					when true
