@@ -38,7 +38,8 @@ class Api::V1::PlansController < ApplicationController
         registration_ids = firebase_tokens
         @notification = {
             title: "#{current_user.fullname} started a plan in #{group_name}",
-            body: "You have #{exploding_offer[params[:exploding_offer]]} to respond before it disappears",
+            # body: "You have #{exploding_offer[params[:exploding_offer]]} to respond before it disappears",
+            body: "The invite expires in #{exploding_offer[params[:exploding_offer]]}, don't miss out.",
             sound: "default"
           }
 
@@ -48,7 +49,7 @@ class Api::V1::PlansController < ApplicationController
         plan_message = PlanMessage.new(
         	plan_id: plan.id,
         	user_id: current_user.id, 
-        	content: "This chat will include all the group members who will be attending this plan. Once a member presses 'I'M IN', they automatically get added to this group chat. Use this chat to finalize the location and other details of the plan.",
+        	content: "This chat includes all the group members who will be attending this plan. Once a member presses 'I'M IN', they automatically get added to this group chat. Use this chat to finalize the location and other details of the plan.",
         	system_message: true
       	)	
 
