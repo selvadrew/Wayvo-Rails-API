@@ -25,7 +25,7 @@ Rails.application.configure do
 
 
   config.web_socket_server_url = "wss://sheltered-escarpment-63295.herokuapp.com/cable" 
-  config.action_cable.allowed_request_origins = ['https://sheltered-escarpment-63295.herokuapp.com', 'http://sheltered-escarpment-63295.herokuapp.com']
+  config.action_cable.allowed_request_origins = ['https://sheltered-escarpment-63295.herokuapp.com/', 'http://sheltered-escarpment-63295.herokuapp.com/']
 
 
   # Enable serving of images, stylesheets, and JavaScripts from an asset server.
