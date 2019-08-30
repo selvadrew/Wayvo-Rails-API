@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190709124315) do
+ActiveRecord::Schema.define(version: 20190830043855) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -89,6 +89,41 @@ ActiveRecord::Schema.define(version: 20190709124315) do
     t.index ["user_id"], name: "index_outgoings_on_user_id"
   end
 
+  create_table "plan_members", force: :cascade do |t|
+    t.bigint "plan_id"
+    t.bigint "user_id"
+    t.boolean "status", default: true
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["plan_id"], name: "index_plan_members_on_plan_id"
+    t.index ["user_id"], name: "index_plan_members_on_user_id"
+  end
+
+  create_table "plan_messages", force: :cascade do |t|
+    t.bigint "plan_id"
+    t.bigint "user_id"
+    t.text "content"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.boolean "system_message", default: false
+    t.index ["plan_id"], name: "index_plan_messages_on_plan_id"
+    t.index ["user_id"], name: "index_plan_messages_on_user_id"
+  end
+
+  create_table "plans", force: :cascade do |t|
+    t.string "group_type"
+    t.bigint "group_id"
+    t.bigint "user_id"
+    t.integer "activity"
+    t.integer "time"
+    t.integer "exploding_offer"
+    t.boolean "is_happening", default: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["group_type", "group_id"], name: "index_plans_on_group_type_and_group_id"
+    t.index ["user_id"], name: "index_plans_on_user_id"
+  end
+
   create_table "program_group_members", force: :cascade do |t|
     t.bigint "program_id"
     t.integer "user_id"
@@ -143,6 +178,11 @@ ActiveRecord::Schema.define(version: 20190709124315) do
   add_foreign_key "feedbacks", "users"
   add_foreign_key "group_connections", "programs"
   add_foreign_key "outgoings", "users"
+  add_foreign_key "plan_members", "plans"
+  add_foreign_key "plan_members", "users"
+  add_foreign_key "plan_messages", "plans"
+  add_foreign_key "plan_messages", "users"
+  add_foreign_key "plans", "users"
   add_foreign_key "program_group_members", "programs"
   add_foreign_key "programs", "universities"
 end

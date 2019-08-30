@@ -87,7 +87,6 @@ class Api::V1::UsersController < ApplicationController
   end
 
 
-
   def store_firebase_token
     user = User.find_by(access_token: params[:access_token])
     user.firebase_token = params[:firebase_token]
@@ -102,6 +101,9 @@ class Api::V1::UsersController < ApplicationController
     user = User.find_by(access_token: params[:access_token])
     user.fullname = params[:fullname].downcase
     user.fullname = user.fullname.titleize
+
+    user.verified = false
+    user.submitted = false
 
     if user.save 
       render json: { fullname: user.fullname, is_success: true }, status: :ok
@@ -174,7 +176,8 @@ class Api::V1::UsersController < ApplicationController
         #firebase_token: user.firebase_token, gonna call firebase every time app opens up for now 
         enrollment: user.enrollment_date || "false", 
         verified: user.verified,
-        submitted: user.submitted 
+        submitted: user.submitted, 
+        user_id: user.id
       }
     else
       render json: {is_success: false}, status: 404

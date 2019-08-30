@@ -11,6 +11,10 @@ class User < ApplicationRecord
 	has_many :feedbacks
 
 	has_many :custom_group_members
+	has_one :program_group_member
+	has_many :plans
+	has_many :plan_members
+	has_many :plan_messages
 
 	scope :friendship_status, -> (current_user) { joins(:friendships).where(:friendships => {friend_id: current_user, status: "FRIENDSHIP"}).pluck(:fullname, :phone_number, :firebase_token).map { |fullname, phone_number, firebase_token| {fullname: fullname, phone_number: phone_number, firebase_token: firebase_token}} }
 	scope :contacts_get_notified, -> (current_user) { where(id: Friendship.all.where(user_id: current_user, status: "FRIENDSHIP", receive_notifications: true, send_notifications: true ).pluck(:friend_id)).pluck(:fullname, :phone_number, :firebase_token).map { |fullname, phone_number, firebase_token| {fullname: fullname, phone_number: phone_number, firebase_token: firebase_token}} }

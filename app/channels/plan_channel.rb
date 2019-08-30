@@ -1,6 +1,6 @@
 class PlanChannel < ApplicationCable::Channel
   def subscribed
-    stream_from "plan_channel"
+    stream_from "plan_channel_#{params[:plan_id]}" #"plan_channel_#{plan.id}"
   end
 
   def unsubscribed
@@ -8,7 +8,8 @@ class PlanChannel < ApplicationCable::Channel
   end
 
   def speak(data)
-  	# Message.create! content: data['message']
-  	ActionCable.server.broadcast 'plan_channel', message: data['message']
+  	# PlanMessage.create!(content: data['message'], plan_id: 37, user_id: 40)
+  	# ActionCable.server.broadcast 'plan_channel', message: data['message']
   end
+
 end

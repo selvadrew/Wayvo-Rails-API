@@ -217,12 +217,7 @@ class Api::V1::OutgoingsController < ApplicationController
 	end
 
 
-	def tester
-		a = User.contacts_get_notified(current_user)
-		b = User.friendship_status(current_user)
 
-		render json: {data: a, other: b}
-	end
 
 
 

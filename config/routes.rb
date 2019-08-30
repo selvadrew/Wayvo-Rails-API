@@ -40,7 +40,9 @@ Rails.application.routes.draw do
       post 'deny_to_group' => 'custom_group_members#deny_to_group'
       post 'check_active_custom_groups' => 'custom_group_connections#check_active_custom_groups'
       post 'said_hello_back_custom_group' => 'custom_group_connections#said_hello_back_custom_group'
-
+      post 'get_live_plans' => 'plans#get_live_plans'
+      post 'join_plan' => 'plans#join_plan'
+      post 'get_messages' => 'plans#get_messages'
 
       resources :friendships
       resources :conversations
@@ -49,6 +51,8 @@ Rails.application.routes.draw do
       resources :feedbacks
       resources :group_connections
       resources :custom_group_connections
+      resources :plans
+      resources :plan_messages
     end
 
 
