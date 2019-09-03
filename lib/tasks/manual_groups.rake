@@ -25,6 +25,15 @@ namespace :manual_groups do
   	end
   end
 
+  desc "fix access_token"
+  task fix_access_token: :environment do
+  	users = User.all.where(access_token: "universitymain")
+  	users.each do |user|
+  		user.access_token =  "universitymain" + user.id.to_s
+  		user.save!
+  	end
+  end
+
   desc "create_program_groups"
   task create_program_groups: :environment do
   	unis = University.all  
