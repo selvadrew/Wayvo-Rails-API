@@ -4,6 +4,10 @@ class Api::V1::ProgramGroupMembersController < ApplicationController
   def request_to_join_program
     @user = User.find_by(access_token: params[:access_token])
     @program = Program.find_by(id: params[:programId])
+    year = 2020 - params[:startYear]
+    year = 4 if year > 4
+    uni_string = @program.university.id.to_s + "uni" + year.to_s
+    custom_group = CustomGroup.find_by(username: uni_string)
 
 
     #check if user is already enrolled in a program in the database 
@@ -15,6 +19,13 @@ class Api::V1::ProgramGroupMembersController < ApplicationController
 
       if exists.save && @user.save 
         render json: {is_success: true }, status: :ok
+        custom_group.custom_group_member.create!(
+          user_id: @user.id, 
+          status: true, 
+          blocked: false, 
+          notifications:true 
+        )
+      
       else
         render json: { is_success: false}, status: :ok
       end
@@ -26,11 +37,21 @@ class Api::V1::ProgramGroupMembersController < ApplicationController
 
       if program_member.save && @user.save 
         render json: {is_success: true}, status: :ok
+        custom_group.custom_group_member.create!(
+          user_id: @user.id, 
+          status: true, 
+          blocked: false, 
+          notifications:true 
+        )
       else
         render json: { is_success: false}, status: :ok
       end         
 
     end #exists
+
+
+
+
   end #def
 
   def get_program_group
