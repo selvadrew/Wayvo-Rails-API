@@ -49,7 +49,7 @@ class Api::V1::PlansController < ApplicationController
         plan_message = PlanMessage.new(
         	plan_id: plan.id,
         	user_id: current_user.id, 
-        	content: "This chat includes all the group members who will be attending this plan. Once a member presses 'I'M IN', they automatically get added to this group chat. Use this chat to finalize the location and other details of the plan.",
+        	content: "This chat includes all the group members who join this plan. Once a member presses 'JOIN PLAN', they automatically get added to this group chat. Use this chat to finalize the location and other details of this plan.",
         	system_message: true
       	)	
 
@@ -226,6 +226,7 @@ class Api::V1::PlansController < ApplicationController
 		messages = []
 
 		retrieve_all = PlanMessage.includes(:user).where(plan_id: params[:plan_id]).order(:id).reverse #.first.user.fullname
+		message_ids = retrieve_all.pluck(:id)
 		retrieve_all.each do |message|
 			if message.system_message
 				output = {
@@ -247,7 +248,7 @@ class Api::V1::PlansController < ApplicationController
 			end
 			messages.push(output)
 		end
-		render json: { is_success: true, messages: messages}, status: :ok 
+		render json: { is_success: true, messages: messages, message_ids: message_ids}, status: :ok 
 	end
 
 
