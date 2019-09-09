@@ -47,7 +47,7 @@ class Api::V1::FriendshipsController < ApplicationController
 
         @notification = {
           title: "Party at 9:00PM! You in?",
-          body: "Rebecca started a party with everyone in your residence. First 50 to join get the details.",
+          body: "Rebecca started a party with everyone in 'First Year Squad'. First 60 to join get to come.",
           sound: "default"
         }
 
