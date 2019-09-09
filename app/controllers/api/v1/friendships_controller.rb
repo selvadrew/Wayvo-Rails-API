@@ -39,17 +39,17 @@ class Api::V1::FriendshipsController < ApplicationController
           ).first 
         end
 
-        # @notification = {
-        #   title: "New friend request",
-        #   body: "#{current_user.fullname} added you to their friends list",
-        #   sound: "default"
-        # }
-
         @notification = {
-          title: "Party tonight at 9:00PM. You in?",
-          body: "Rebecca started this party with everyone in your residence. First 50 to join get the details.",
+          title: "New friend request",
+          body: "#{current_user.fullname} added you to their friends list",
           sound: "default"
         }
+
+        # @notification = {
+        #   title: "Party tonight at 9:00PM. You in?",
+        #   body: "Rebecca started this party with everyone in your residence. First 50 to join get the details.",
+        #   sound: "default"
+        # }
 
         firebase_token << add_friend.firebase_token
 
