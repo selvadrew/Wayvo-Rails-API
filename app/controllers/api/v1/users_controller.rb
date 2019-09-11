@@ -216,8 +216,10 @@ class Api::V1::UsersController < ApplicationController
           body: "Sorry, looks like your photo is invalid. We understand you may be uncomfortable taking a selfie but it's the only way we can keep everyone safe from people who shouldn't be on the platform.",
           sound: "default"
         }
-        
-        @user.custom_group_members.last.destroy
+
+        if @user.custom_group_members
+          @user.custom_group_members.last.destroy
+        end
       end
 
       if @user.save 
