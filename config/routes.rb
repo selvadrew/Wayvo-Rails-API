@@ -43,6 +43,8 @@ Rails.application.routes.draw do
       post 'get_live_plans' => 'plans#get_live_plans'
       post 'join_plan' => 'plans#join_plan'
       post 'get_messages' => 'plans#get_messages'
+      post 'get_uni_requests' => 'users#get_uni_requests'
+      post 'uni_request_update' => 'users#uni_request_update'
 
       resources :friendships
       resources :conversations

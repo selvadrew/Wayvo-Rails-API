@@ -185,6 +185,50 @@ class Api::V1::UsersController < ApplicationController
   end
 
 
+  def get_uni_requests
+    if current_user.id == 2 || current_user.id == 40 || current_user.username == "admin" 
+      users = User.all.where(submitted: true, verified: false).order(updated_at: :desc).pluck(:id, :username, :fullname,).map { |id, username, fullname| {id: id, username: username, fullname: fullname}}
+      if users 
+        render json: {is_success: true, users: users }, status: 404
+    else
+        render json: {is_success: false}, status: 404
+      end
+    end
+  end
+
+  def uni_request_update
+    if current_user.id == 2 || current_user.id == 40 || current_user.username == "admin" 
+      require 'fcm'
+      fcm = FCM.new("AAAAAOXsHmg:APA91bFeO5xEEP3Zqkg1Ht3ocwzphQ9uEFGdUHHbRsGHAaVSqEXdJWAUo026ENDbFKJ6Sxy7UFRBYmm-ZH6NOkBGRbZvWhWtm8beW0lRtJivIdoExzfkiYk5QWj98kfTB9-sE4gD6oX-")
+
+      @user = User.find_by(id: params[:id])
+      if params[:status]
+        @user.verified = true 
+        @notification = {
+          title: "You're verified!",
+          body: "Go start a plan with one of your groups!",
+          sound: "default"
+        }
+      else 
+        @user.submitted = false 
+        @notification = {
+          title: "Please re-submit your photo to get verified",
+          body: "Sorry, looks like your photo is invalid. We understand you may be uncomfortable taking a selfie but it's the only way we can keep everyone safe from people who shouldn't be on the platform.",
+          sound: "default"
+        }
+      end
+
+      if @user.save 
+        firebase_token = [@user.firebase_token]
+        registration_ids = firebase_token
+        options = {notification: @notification, priority: 'high'}
+        response = fcm.send(registration_ids, options)
+      end
+
+    end
+  end
+
+
 end
 
 
