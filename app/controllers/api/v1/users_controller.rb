@@ -216,6 +216,8 @@ class Api::V1::UsersController < ApplicationController
           body: "Sorry, looks like your photo is invalid. We understand you may be uncomfortable taking a selfie but it's the only way we can keep everyone safe from people who shouldn't be on the platform.",
           sound: "default"
         }
+        
+        @user.custom_group_members.last.destroy
       end
 
       if @user.save 
@@ -223,6 +225,7 @@ class Api::V1::UsersController < ApplicationController
         registration_ids = firebase_token
         options = {notification: @notification, priority: 'high'}
         response = fcm.send(registration_ids, options)
+
       end
 
     end
