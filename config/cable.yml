@@ -8,7 +8,7 @@ test:
 
 production:
   adapter: redis
-  url: redis://h:pe789d50a1aa8ff07b5e2ea5a6c6563eac623f0b79630a0344a82f8bb3ad29636@ec2-54-162-141-93.compute-1.amazonaws.com:23729
+  url: redis://h:pe789d50a1aa8ff07b5e2ea5a6c6563eac623f0b79630a0344a82f8bb3ad29636@ec2-3-226-35-239.compute-1.amazonaws.com:29529
   #channel_prefix: PhonePal_production
 
 
