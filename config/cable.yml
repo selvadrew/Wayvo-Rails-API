@@ -8,7 +8,7 @@ test:
 
 production:
   adapter: redis
-  url: redis://h:pe789d50a1aa8ff07b5e2ea5a6c6563eac623f0b79630a0344a82f8bb3ad29636@ec2-3-225-104-2.compute-1.amazonaws.com:7429
+  url: <%= ENV.fetch("REDIS_URL") %>
   #channel_prefix: PhonePal_production
 
 
