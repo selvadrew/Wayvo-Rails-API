@@ -1,6 +1,9 @@
 class Api::V1::UsersController < ApplicationController
   before_action :authenticate_with_token!, only: [:logout, :check_username, :add_phone_number, :get_phone_number]
 
+  require 'sendgrid-ruby'
+  include SendGrid
+
   def facebook
     if params[:facebook_access_token]
       graph = Koala::Facebook::API.new(params[:facebook_access_token])
@@ -36,53 +39,6 @@ class Api::V1::UsersController < ApplicationController
       end
     else
       render json: { error: "Invalid Facebook Token", is_success: false}, status: :unprocessable_entity
-    end
-  end
-
-  def email_signup
-    if params[:email] && params[:password]
-      user = User.find_by(email: params[:email])
-
-      if user
-        if user.provider
-          render json: { error: "You already used this email when you logged in with Facebook. Go back and press 'Continue with Facebook'.", is_success: false}, status: 422 
-        else
-          render json: { error: "An account has already been created with this email. Please log in.", is_success: false}, status: 422 
-        end 
-      else
-        user = User.new(
-                    email: params[:email].downcase,
-                    password: params[:password]
-                )
-        user.generate_authentication_token
-        if user.save
-          render json: {access_token: user.access_token}, status: :ok
-        else
-          render json: { error: "Sorry, something went wrong.", is_success: false }, status: 422
-        end
-      end
-    else 
-      render json: { error: "Sorry, something went wrong.", is_success: false }, status: 422
-    end
-  end
-
-  def email_login 
-    if params[:email] && params[:password]
-      user = User.find_by(email: params[:email])
-
-      if user && user.authenticate(params[:password]) 
-        render json: {
-            access_token: user.access_token, 
-            phone_number: user.phone_number, 
-            fullname: user.fullname, 
-            username: user.username
-          }, 
-            status: :ok
-      else
-        render json: { is_success: false }, status: 422
-      end
-    else 
-      render json: { is_success: false }, status: 422
     end
   end
 
@@ -227,14 +183,187 @@ class Api::V1::UsersController < ApplicationController
         registration_ids = firebase_token
         options = {notification: @notification, priority: 'high'}
         response = fcm.send(registration_ids, options)
-
       end
 
     end
   end
 
+  def email_signup
+    if params[:email] && params[:password]
+      user = User.find_by(email: params[:email])
+
+      if user
+        if user.provider
+          render json: { error: "You already used this email when you logged in with Facebook. Go back and press 'Continue with Facebook'.", is_success: false}, status: 422 
+        else
+          render json: { error: "An account has already been created with this email. Please log in.", is_success: false}, status: 422 
+        end 
+      else
+        user = User.new(
+                    email: params[:email].downcase,
+                    password: params[:password]
+                )
+        user.generate_authentication_token
+        if user.save
+          render json: {access_token: user.access_token, new_user: true}, status: :ok
+        else
+          render json: { error: "Sorry, something went wrong.", is_success: false }, status: 422
+        end
+      end
+    else 
+      render json: { error: "Sorry, something went wrong.", is_success: false }, status: 422
+    end
+  end
+
+  def email_login 
+    if params[:email] && params[:password]
+      user = User.find_by(email: params[:email])
+
+      if user && user.authenticate(params[:password]) 
+        render json: {
+            new_user: false,
+            access_token: user.access_token, 
+            phone_number: user.phone_number, 
+            fullname: user.fullname, 
+            username: user.username
+          }, 
+            status: :ok
+      else
+        render json: { is_success: false }, status: 422
+      end
+    else 
+      render json: { is_success: false }, status: 422
+    end
+  end
+
+
+  def verify_with_email_code
+    user = User.find_by(access_token: params[:access_token])
+    if user.email_code == params[:email_code].to_i
+      if user.phone_number && user.fullname && user.username 
+        #login
+        render json: {
+            is_success: true,
+            new_user: false,
+            access_token: user.access_token, 
+            phone_number: user.phone_number, 
+            fullname: user.fullname, 
+            username: user.username,
+            university_id: user.university_id,
+            university_name: user.university.university_name
+          }, 
+            status: :ok
+      else
+        #signup
+         render json: {is_success: true, access_token: user.access_token, new_user: true, university_id: user.university_id, university_name: user.university.university_name}, status: :ok
+      end
+
+    else
+      render json: { is_success: false, error: "Incorrect code" }, status: :ok
+    end
+  end
+
+  def send_email_code
+    email = params[:email].downcase
+
+    EmailTry.create(email: email)
+    user = User.find_by(email: email)
+    correct_email = false 
+    new_user = true 
+    send_email = false 
+
+    if user 
+      user.generate_email_code 
+      user.save
+      new_user = false 
+      send_email = true 
+      message = "back"
+
+    else
+      #school email exists 
+      University.where.not(email: nil).each do |uni|
+        email_handle = uni.email
+        length = email_handle.length
+        if email.last(length).include? email_handle
+          correct_email = true 
+          send_email = true 
+          message = "to Wayvo"
+
+          #create user 
+          user = User.new(email: email)
+          user.generate_authentication_token
+          user.generate_email_code 
+          user.university_id = uni.id
+          if !user.save
+            send_email = false 
+            render json: { error: "Sorry, something went wrong.", is_success: false }, status: 422
+          end
+          break
+        end
+      end
+
+      #school email doesnt exist 
+      if !correct_email
+        render json: {error: "Double check your email. If it's correct, we don't support your school yet. Sorry :("}, status: :ok
+      end
+    end
+
+    if send_email
+      from = SendGrid::Email.new(email: 'hello@wayvo.app')
+      to = SendGrid::Email.new(email: email)
+      subject = 'Wayvo Verification Code'
+      content = SendGrid::Content.new(
+        type: 'text/plain', 
+        value: "Welcome #{message}. Your verification code is: #{user.email_code}"
+        )
+      mail = SendGrid::Mail.new(from, subject, to, content)
+
+      ##sg = SendGrid::API.new(api_key: ENV['SENDGRID_API_KEY'])
+      sg = SendGrid::API.new(api_key: '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')
+      ##response = sg.client.mail._('send').post(request_body: mail.to_json)
+      
+      #should check status code?
+      #puts response.status_code
+      puts user.email_code
+
+      render json: { is_success: true, access_token: user.access_token, new_user: new_user }, status: :ok
+    end
+
+  end
 
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

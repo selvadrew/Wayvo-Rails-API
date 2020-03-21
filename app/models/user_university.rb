@@ -1,0 +1,2 @@
+class UserUniversity < ApplicationRecord
+end

@@ -32,6 +32,8 @@ gem 'koala', '~> 3.0.0'
 gem 'devise', '~> 4.2'
 gem 'fcm'
 
+gem 'sendgrid-ruby'
+
 
 
 group :development, :test do

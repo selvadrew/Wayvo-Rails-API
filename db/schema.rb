@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20190830043855) do
+ActiveRecord::Schema.define(version: 20191221180909) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -51,6 +51,12 @@ ActiveRecord::Schema.define(version: 20190830043855) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["user_id"], name: "index_custom_groups_on_user_id"
+  end
+
+  create_table "email_tries", force: :cascade do |t|
+    t.string "email"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "feedbacks", force: :cascade do |t|
@@ -147,6 +153,14 @@ ActiveRecord::Schema.define(version: 20190830043855) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "university", default: true
+    t.string "email"
+  end
+
+  create_table "universities_users", id: false, force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "university_id", null: false
+    t.index ["university_id"], name: "index_universities_users_on_university_id"
+    t.index ["user_id"], name: "index_universities_users_on_user_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -169,6 +183,9 @@ ActiveRecord::Schema.define(version: 20190830043855) do
     t.integer "enrollment_date"
     t.boolean "verified"
     t.boolean "submitted"
+    t.integer "email_code"
+    t.bigint "university_id"
+    t.index ["university_id"], name: "index_users_on_university_id"
   end
 
   add_foreign_key "acceptors", "outgoings"
@@ -185,4 +202,5 @@ ActiveRecord::Schema.define(version: 20190830043855) do
   add_foreign_key "plans", "users"
   add_foreign_key "program_group_members", "programs"
   add_foreign_key "programs", "universities"
+  add_foreign_key "users", "universities"
 end
