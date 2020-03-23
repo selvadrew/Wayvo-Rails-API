@@ -47,6 +47,8 @@ Rails.application.routes.draw do
       post 'get_messages' => 'plans#get_messages'
       post 'get_uni_requests' => 'users#get_uni_requests'
       post 'uni_request_update' => 'users#uni_request_update'
+      post 'send_sms_code' => 'users#send_sms_code'
+      post 'verify_with_sms_code' => 'users#verify_with_sms_code'
 
       resources :friendships
       resources :conversations

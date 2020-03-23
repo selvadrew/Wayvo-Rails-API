@@ -3,6 +3,7 @@ class Api::V1::UsersController < ApplicationController
 
   require 'sendgrid-ruby'
   include SendGrid
+  require 'twilio-ruby'
 
   def facebook
     if params[:facebook_access_token]
@@ -328,8 +329,86 @@ class Api::V1::UsersController < ApplicationController
 
       render json: { is_success: true, access_token: user.access_token, new_user: new_user }, status: :ok
     end
-
   end
+
+
+  def send_sms_code
+    phone_number = params[:phone_number]
+    user = User.find_by(phone_number: phone_number) 
+    new_user = true  
+    send_sms = true    
+    message = "to Wayvo"
+    
+    if user && user.username  
+      user.generate_email_code 
+      new_user = false 
+      message = "back"
+    else 
+      #create user 
+      unless user 
+        user = User.new(phone_number: phone_number)
+      end
+      user.generate_authentication_token
+      user.generate_email_code 
+    end
+
+    if !user.save
+      send_sms = false 
+      render json: { error: "Sorry, something went wrong.", is_success: false }, status: 422
+    end
+
+    if send_sms
+      account_sid = ENV.fetch("TWILIO_ACCOUNT_SID") { Rails.application.secrets.TWILIO_ACCOUNT_SID } # Your Test Account SID from www.twilio.com/console/settings
+      auth_token = ENV.fetch("TWILIO_AUTH_TOKEN") { Rails.application.secrets.TWILIO_AUTH_TOKEN }   # Your Test Auth Token from www.twilio.com/console/settings
+
+      test_account_sid = Rails.application.secrets.TEST_TWILIO_ACCOUNT_SID
+      test_auth_token = Rails.application.secrets.TEST_TWILIO_AUTH_TOKEN
+
+      # @client = Twilio::REST::Client.new account_sid, auth_token
+    
+      # formatted_phone_number = "+1" + phone_number
+      # message = @client.messages.create(
+      #   body: "Welcome #{message}. Your Wayvo verification code is: #{user.email_code}",
+      #   to: formatted_phone_number, # Replace with your phone number
+      #   from: "+16474902706" # Use this Magic Number for creating SMS
+      # )  
+
+      # puts message.sid
+      puts user.email_code 
+      puts "???????????????????????????"
+      render json: { is_success: true, access_token: user.access_token, new_user: new_user }, status: :ok
+    end   
+  end
+
+
+  def verify_with_sms_code
+    user = User.find_by(access_token: params[:access_token])
+    if user.email_code == params[:email_code].to_i
+      if user.phone_number && user.fullname && user.username 
+        #login
+        render json: {
+            is_success: true,
+            new_user: false,
+            access_token: user.access_token, 
+            phone_number: user.phone_number, 
+            fullname: user.fullname, 
+            username: user.username,
+            # university_id: user.university_id,
+            # university_name: user.university.university_name
+          }, 
+            status: :ok
+      else
+        #signup
+         render json: {is_success: true, access_token: user.access_token, new_user: true}, status: :ok #university_id: user.university_id, university_name: user.university.university_name
+      end
+
+    else
+      render json: { is_success: false, error: "Incorrect code" }, status: :ok
+    end
+  end
+
+
+
 
 end
 

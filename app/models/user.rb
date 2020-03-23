@@ -16,7 +16,8 @@ class User < ApplicationRecord
 	has_many :plan_members
 	has_many :plan_messages
 
-	belongs_to :university
+# needs to be there for university feature 
+	# belongs_to :university
 
 	scope :friendship_status, -> (current_user) { joins(:friendships).where(:friendships => {friend_id: current_user, status: "FRIENDSHIP"}).pluck(:fullname, :phone_number, :firebase_token).map { |fullname, phone_number, firebase_token| {fullname: fullname, phone_number: phone_number, firebase_token: firebase_token}} }
 	scope :contacts_get_notified, -> (current_user) { where(id: Friendship.all.where(user_id: current_user, status: "FRIENDSHIP", receive_notifications: true, send_notifications: true ).pluck(:friend_id)).pluck(:fullname, :phone_number, :firebase_token).map { |fullname, phone_number, firebase_token| {fullname: fullname, phone_number: phone_number, firebase_token: firebase_token}} }
@@ -24,8 +25,8 @@ class User < ApplicationRecord
 
 
 	validates :username, format: { with: /\A[a-zA-Z0-9]{3,15}\z/ }, allow_nil: true, uniqueness: true
-	validates :phone_number, format: { with: /\A[0-9]{10}\z/ }, allow_nil: true
-	validates :email, uniqueness: true
+	validates :phone_number, format: { with: /\A[0-9]{10}\z/ }, uniqueness: true
+	# validates :email, uniqueness: true
 
 
 

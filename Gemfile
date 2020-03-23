@@ -33,6 +33,7 @@ gem 'devise', '~> 4.2'
 gem 'fcm'
 
 gem 'sendgrid-ruby'
+gem 'twilio-ruby'
 
 
 
