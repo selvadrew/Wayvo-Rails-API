@@ -49,6 +49,11 @@ Rails.application.routes.draw do
       post 'uni_request_update' => 'users#uni_request_update'
       post 'send_sms_code' => 'users#send_sms_code'
       post 'verify_with_sms_code' => 'users#verify_with_sms_code'
+      post 'save_contacts' => 'users#save_contacts'
+      post 'send_invite_to_catch_up' => 'users#send_invite_to_catch_up'
+      post '/incoming_sms' => 'stops#incoming_sms'
+      post 'save_time_zone' => 'users#save_time_zone'
+
 
       resources :friendships
       resources :conversations
@@ -59,6 +64,7 @@ Rails.application.routes.draw do
       resources :custom_group_connections
       resources :plans
       resources :plan_messages
+      resources :stops
     end
 
 

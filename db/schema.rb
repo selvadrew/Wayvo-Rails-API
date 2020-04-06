@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20191221180909) do
+ActiveRecord::Schema.define(version: 20200406063006) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -87,6 +87,14 @@ ActiveRecord::Schema.define(version: 20191221180909) do
     t.index ["program_id"], name: "index_group_connections_on_program_id"
   end
 
+  create_table "invitations", force: :cascade do |t|
+    t.integer "user_id"
+    t.integer "invitation_recipient_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.datetime "scheduled_call"
+  end
+
   create_table "outgoings", force: :cascade do |t|
     t.bigint "user_id"
     t.datetime "created_at", null: false
@@ -147,6 +155,21 @@ ActiveRecord::Schema.define(version: 20191221180909) do
     t.index ["university_id"], name: "index_programs_on_university_id"
   end
 
+  create_table "stops", force: :cascade do |t|
+    t.string "number"
+    t.string "message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "text_invitations", force: :cascade do |t|
+    t.bigint "user_id"
+    t.string "phone_number"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_text_invitations_on_user_id"
+  end
+
   create_table "universities", force: :cascade do |t|
     t.string "university_name"
     t.string "university_country"
@@ -185,6 +208,8 @@ ActiveRecord::Schema.define(version: 20191221180909) do
     t.boolean "submitted"
     t.integer "email_code"
     t.bigint "university_id"
+    t.text "contacts", array: true
+    t.string "time_zone"
     t.index ["university_id"], name: "index_users_on_university_id"
   end
 
@@ -202,5 +227,6 @@ ActiveRecord::Schema.define(version: 20191221180909) do
   add_foreign_key "plans", "users"
   add_foreign_key "program_group_members", "programs"
   add_foreign_key "programs", "universities"
+  add_foreign_key "text_invitations", "users"
   add_foreign_key "users", "universities"
 end

@@ -2,10 +2,16 @@ class User < ApplicationRecord
 
 	# has_secure_password
 
-	has_many :friendships
-	has_many :friends, :through => :friendships
-	has_many :inverse_friendships, :class_name => "Friendship", :foreign_key => "friend_id"
-	has_many :inverse_friends, :through => :inverse_friendships, :source => :user
+	has_many :friendships # returns all friendships where user_id is current user 
+	has_many :friends, :through => :friendships # returns frind users object where user_id is current user 
+	has_many :inverse_friendships, :class_name => "Friendship", :foreign_key => "friend_id" # returns friendship object 
+	has_many :inverse_friends, :through => :inverse_friendships, :source => :user # returns user object where friend_id is current user 
+
+	
+	has_many :invitations #invitations sent 
+	has_many :invitation_recipients, :through => :invitations #friends_i_invited
+	has_many :invitations_received, :class_name => "Invitation", :foreign_key => "invitation_recipient_id"
+	has_many :friends_who_invited_me, :through => :invitations_received, :source => :user
 
 	has_many :outgoings
 	has_many :feedbacks
@@ -15,6 +21,8 @@ class User < ApplicationRecord
 	has_many :plans
 	has_many :plan_members
 	has_many :plan_messages
+
+	has_many :text_invitations 
 
 # needs to be there for university feature 
 	# belongs_to :university

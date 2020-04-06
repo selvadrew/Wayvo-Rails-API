@@ -1,5 +1,5 @@
 class Api::V1::UsersController < ApplicationController
-  before_action :authenticate_with_token!, only: [:logout, :check_username, :add_phone_number, :get_phone_number]
+  before_action :authenticate_with_token!, only: [:logout, :check_username, :add_phone_number, :get_phone_number, :send_invite_to_catch_up, :save_time_zone]
 
   require 'sendgrid-ruby'
   include SendGrid
@@ -358,8 +358,8 @@ class Api::V1::UsersController < ApplicationController
     end
 
     if send_sms
-      account_sid = ENV.fetch("TWILIO_ACCOUNT_SID") { Rails.application.secrets.TWILIO_ACCOUNT_SID } # Your Test Account SID from www.twilio.com/console/settings
-      auth_token = ENV.fetch("TWILIO_AUTH_TOKEN") { Rails.application.secrets.TWILIO_AUTH_TOKEN }   # Your Test Auth Token from www.twilio.com/console/settings
+      account_sid = ENV.fetch("TWILIO_ACCOUNT_SID") { Rails.application.secrets.TWILIO_ACCOUNT_SID } 
+      auth_token = ENV.fetch("TWILIO_AUTH_TOKEN") { Rails.application.secrets.TWILIO_AUTH_TOKEN }   
 
       test_account_sid = Rails.application.secrets.TEST_TWILIO_ACCOUNT_SID
       test_auth_token = Rails.application.secrets.TEST_TWILIO_AUTH_TOKEN
@@ -369,8 +369,8 @@ class Api::V1::UsersController < ApplicationController
       # formatted_phone_number = "+1" + phone_number
       # message = @client.messages.create(
       #   body: "Welcome #{message}. Your Wayvo verification code is: #{user.email_code}",
-      #   to: formatted_phone_number, # Replace with your phone number
-      #   from: "+16474902706" # Use this Magic Number for creating SMS
+      #   to: formatted_phone_number,
+      #   from: "+16474902706" 
       # )  
 
       # puts message.sid
@@ -408,6 +408,32 @@ class Api::V1::UsersController < ApplicationController
   end
 
 
+def save_contacts
+  user = User.find_by(access_token: params[:access_token])
+  if user 
+    user.contacts = params[:contacts]
+    user.save 
+    render json: { is_success: true}, status: :ok
+  else
+    render json: { is_success: false}, status: :ok
+  end
+
+end
+# contacts column, number of texts sent column  
+
+def save_time_zone
+  @current_user.time_zone = params[:time_zone]
+  if @current_user.save
+    render json: { is_success: true}, status: :ok
+  else
+    render json: { is_success: false}, status: :ok
+  end
+end
+
+def send_invite_to_catch_up
+  SendNotificationToCatchUpJob.perform_later(@current_user, params[:phone_numbers])
+  render json: { is_success: true}, status: :ok
+end
 
 
 end
