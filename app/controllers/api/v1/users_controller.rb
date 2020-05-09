@@ -400,6 +400,9 @@ class Api::V1::UsersController < ApplicationController
       else
         #signup
          render json: {is_success: true, access_token: user.access_token, new_user: true}, status: :ok #university_id: user.university_id, university_name: user.university.university_name
+      
+        # check if this user has been invited before to create an invitation 
+
       end
 
     else
@@ -423,6 +426,7 @@ end
 
 def save_time_zone
   @current_user.time_zone = params[:time_zone]
+  @current_user.time_zone_offset = params[:time_zone_offset]
   if @current_user.save
     render json: { is_success: true}, status: :ok
   else
@@ -431,7 +435,8 @@ def save_time_zone
 end
 
 def send_invite_to_catch_up
-  SendNotificationToCatchUpJob.perform_later(@current_user, params[:phone_numbers])
+  name_and_number = params[:name_and_number].to_json
+  SendNotificationToCatchUpJob.perform_later(@current_user, name_and_number)
   render json: { is_success: true}, status: :ok
 end
 

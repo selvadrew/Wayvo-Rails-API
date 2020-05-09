@@ -8,9 +8,9 @@ class User < ApplicationRecord
 	has_many :inverse_friends, :through => :inverse_friendships, :source => :user # returns user object where friend_id is current user 
 
 	
-	has_many :invitations #invitations sent 
-	has_many :invitation_recipients, :through => :invitations #friends_i_invited
-	has_many :invitations_received, :class_name => "Invitation", :foreign_key => "invitation_recipient_id"
+	has_many :invitations #invitations sent  invitation object 
+	has_many :invitation_recipients, :through => :invitations #friends_i_invited friend objects
+	has_many :invitations_received, :class_name => "Invitation", :foreign_key => "invitation_recipient_id" # invitation objects
 	has_many :friends_who_invited_me, :through => :invitations_received, :source => :user
 
 	has_many :outgoings
@@ -23,6 +23,7 @@ class User < ApplicationRecord
 	has_many :plan_messages
 
 	has_many :text_invitations 
+	has_one :calendar 
 
 # needs to be there for university feature 
 	# belongs_to :university

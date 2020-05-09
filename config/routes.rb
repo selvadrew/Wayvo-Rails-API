@@ -53,6 +53,10 @@ Rails.application.routes.draw do
       post 'send_invite_to_catch_up' => 'users#send_invite_to_catch_up'
       post '/incoming_sms' => 'stops#incoming_sms'
       post 'save_time_zone' => 'users#save_time_zone'
+      post 'get_calendar' => 'calendars#get_calendar'
+      post 'set_calendar' => 'calendars#set_calendar'
+      post 'all_user_invitation_data' => 'invitations#all_user_invitation_data'
+      post 'show_friends_calendar' => 'invitations#show_friends_calendar'
 
 
       resources :friendships
