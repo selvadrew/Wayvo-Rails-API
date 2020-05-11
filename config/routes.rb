@@ -56,7 +56,9 @@ Rails.application.routes.draw do
       post 'get_calendar' => 'calendars#get_calendar'
       post 'set_calendar' => 'calendars#set_calendar'
       post 'all_user_invitation_data' => 'invitations#all_user_invitation_data'
-      post 'show_friends_calendar' => 'invitations#show_friends_calendar'
+      post 'show_friends_calendar' => 'calendars#show_friends_calendar'
+      post 'book_friends_calendar' => 'calendars#book_friends_calendar'
+
 
 
       resources :friendships

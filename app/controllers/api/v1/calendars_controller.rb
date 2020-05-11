@@ -1,5 +1,5 @@
 class Api::V1::CalendarsController < ApplicationController
-	  before_action :authenticate_with_token!, only: [:get_calendar, :set_calendar, :update_calendar]
+	  before_action :authenticate_with_token!, only: [:get_calendar, :set_calendar, :update_calendar, :show_friends_calendar, :book_friends_calendar]
 
 	  # check if todays date is the same - with actual date, front end date, and saved date in database 
 	  # when getting calendar, update the entire calendar -> when setting the calendar, if the dates dont match, show 
@@ -119,153 +119,155 @@ class Api::V1::CalendarsController < ApplicationController
 
 
 
+  def show_friends_calendar 
+  	# receive id 
+  	# get today and tomorrow- if not show false 
+  	# if i want to see my friends calendar - i need to get their calendar and change it to my time zone 
+  	# after selecting a time, it would need to change back to utc prob
+  	invitation = Invitation.find_by(id: params[:invitation_id], user_id: params[:user_id])
+  	@inviter = User.find_by(id: params[:user_id])
+  	date_today_in_utc = Time.current.utc
+  	updated_at = @inviter.calendar.updated_at
+  
+  	if invitation 
+  		users_date_today = (date_today_in_utc + @current_user.time_zone_offset.minutes).to_date 
+	  	inviters_saved_date_today = (Time.parse(@inviter.calendar.schedule["todays_date"]) + @current_user.time_zone_offset.minutes).to_date 
+	  	inviters_saved_date_tomorrow = (Time.parse(@inviter.calendar.schedule["tomorrows_date"]) + @current_user.time_zone_offset.minutes).to_date 
+
+  		# actual today == saved today 
+  		if users_date_today == inviters_saved_date_today
+  			# get today/tomorrow dates and show in the current users time zone
+	  		todays_schedule_normalized = show_friends_selected_times(@inviter, "todays_schedule")
+			tomorrows_schedule_normalized = show_friends_selected_times(@inviter, "tomorrows_schedule")
+
+  		# actual today == saved tomorrow -> therefore today options should be blank 
+  		elsif users_date_today == inviters_saved_date_tomorrow
+  			# get tomorrows saved database dates and show as todays dates for the user 	
+  			todays_schedule_normalized = show_friends_selected_times(@inviter, "tomorrows_schedule")
+			tomorrows_schedule_normalized = []
+
+  		# both dates are not relevant anymore 
+  		else
+  			todays_schedule_normalized = []
+  			tomorrows_schedule_normalized = []
+  		end
+
+	  	render json:{ is_success: true, todays_dates: todays_schedule_normalized, tomorrows_dates: tomorrows_schedule_normalized, updated_at: updated_at }, status: :ok
+
+	else 
+		render json:{ is_success: false }, status: :ok
+  	end
+
+  end 
 
 
+  def book_friends_calendar 
 
+  	# params day will be today or tomorrow 
+  	# params time selected 
+  	# params updated_at 
+  	# params invitation_id 
 
+  	@invitation = Invitation.find_by_id(params[:invitation_id])
+  	@inviter = User.find_by_id(@invitation.user_id)
+  	if params[:day] == 1 
+  		day = "todays_schedule"
+  		scheduled_day = 0
+  	else 
+  		day = "tomorrows_schedule"
+  		scheduled_day = 1 
+  	end
 
+  	# if true, friend updated their calendar 
+	if false#@inviter.calendar.updated_at > Time.parse(params[:updated_at])
+		render json:{ is_success: false, reload: true,  db: @inviter.calendar.updated_at, param: Time.parse(params[:updated_at])}, status: :ok
+	else
+		# schedule call
+		inviter_free = false 
+		current_user_free = false 
 
+		# figure out utc time 
+		utc_time_selected = (Time.parse(params[:time]) - @current_user.time_zone_offset.minutes).strftime("%-I:%M%p").downcase
 
-
-
-	def get_calendars 
-		# did the user select times for today or tomorrow 
-		date1 = Time.current.utc.to_date.to_s
-
-		# need to check if date set is the same as date now from front end 
-
-		if @current_user.calendar
-			#check if todays date is the same
-			if @current_user.calendar.schedule["todays_date"] === date1
-				
-				todays_schedule_normalized = {}
-				@current_user.calendar.schedule["todays_schedule"].each do |time, status|
-					standard_time = (Time.parse(time) + @current_user.time_zone_offset.minutes).strftime("%-I:%M%p").downcase
-					todays_schedule_normalized[standard_time] = status 
-				end
-
-				tomorrows_schedule_normalized = {}
-				@current_user.calendar.schedule["tomorrows_schedule"].each do |time, status|
-					standard_time = (Time.parse(time) + @current_user.time_zone_offset.minutes).strftime("%-I:%M%p").downcase
-					tomorrows_schedule_normalized[standard_time] = status 
-				end
-
-				render json: { 
-					is_success: true, 
-					has_calendar: true, 
-					todays_schedule: todays_schedule_normalized,
-					tomorrows_schedule: tomorrows_schedule_normalized
-				}, status: :ok
-
-			# check if tomorrows date in db is todays date	
-			elsif @current_user.calendar.schedule["tomorrows_date"] === date1
-
-				tomorrows_schedule_normalized = {}
-				@current_user.calendar.schedule["tomorrows_schedule"].each do |time, status|
-					standard_time = (Time.parse(time) + @current_user.time_zone_offset.minutes).strftime("%-I:%M%p").downcase
-					tomorrows_schedule_normalized[standard_time] = status 
-				end
-
-				@current_user.calendar.todays_date =  todays_date.to_date,
-				tomorrows_date =  tomorrows_date.to_date
-				@current_user.calendar.schedule["todays_schedule"] = @current_user.calendar.schedule["tomorrows_schedule"]
-				@current_user.calendar.schedule["tomorrows_schedule"] = {}
-
-				render json: { 
-					is_success: true, 
-					has_calendar: true, 
-					todays_schedule: tomorrows_schedule_normalized,
-					tomorrows_schedule: {}
-				}, status: :ok
-
-			# else saved calendar is old 
-			else
-				render json: { is_success: true, has_calendar: true, todays_schedule: {}, tomorrows_schedule: {} }, status: :ok
-			end 
-
-
-		else
- 			render json: { is_success: true, has_calendar: true, todays_schedule: {}, tomorrows_schedule: {} }, status: :ok
+		# check that it is free for inviter
+		inviter_status = @inviter.calendar.schedule[day][utc_time_selected]
+		if inviter_status == "free"
+			@inviter.calendar.schedule[day][utc_time_selected] = "Call"
+			inviter_free = true
 		end
 
-
-	end
-
-
-	def set_calendars
-		todays_date = Time.current.utc
-		tomorrows_date = todays_date + 1.day 
-		calendar_set_before = @current_user.calendar
-
-		#need to check if the today coming in is actually one of the two saved dates 
-		# if today is the same, use same data 
-		# if tomorrows saved data is the same as today's date switch tomorrows to today and clear tomorrows data 
-		# if none of the dates coincide, erase all data and set 
-		if calendar_set_before
-			# get users current date and saved date - this can be different from utc time 
-			user_right_now = (todays_date + @current_user.time_zone_offset.minutes).to_date
-			last_saved_today = @current_user.calendar.schedule["todays_date"] 
-
-			if user_right_now != last_saved_today 
-				render json: { is_success: false, run_get_calendar: true }, status: :ok
-			end
-			
+		# check that its free or null for current user 
+		current_user_status = @current_user.calendar.schedule[day][utc_time_selected]
+		if current_user_status == "free" || current_user_status == nil 
+			@current_user.calendar.schedule[day][utc_time_selected] = "Call"
+			current_user_free = true
 		end
 
-		todays_schedule_updated = params[:todays_schedule]
-		todays_schedule_utc = {}
-		todays_schedule_updated.each do |obj| #{"id"=>1, "time"=>"8:00am", "status"=>"dont show"}
-			utc_time = (Time.parse(obj["time"]) - @current_user.time_zone_offset.minutes).strftime("%-I:%M%p").downcase
-			todays_schedule_utc[utc_time] = obj["status"]
-		end
-
-		tomorrows_schedule_updated = params[:tomorrows_schedule]
-		tomorrows_schedule_utc = {}
-		tomorrows_schedule_updated.each do |obj|
-			utc_time = (Time.parse(obj["time"]) - @current_user.time_zone_offset.minutes).strftime("%-I:%M%p").downcase
-			tomorrows_schedule_utc[utc_time] = obj["status"]
-		end
-
-
-		if calendar_set_before
-			@current_user.calendar.schedule = {				
-				todays_date: todays_date.to_date,
-				tomorrows_date: tomorrows_date.to_date,
-				todays_schedule: todays_schedule_utc,
-				tomorrows_schedule: tomorrows_schedule_utc
-			}
-			
-		else
-			Calendar.new(user: @current_user, schedule: {
-				todays_date: todays_date.to_date,
-				tomorrows_date: tomorrows_date.to_date,
-				todays_schedule: todays_schedule_utc,
-				tomorrows_schedule: tomorrows_schedule_utc
-			})
-
-		end
-
-		if @current_user.calendar.save 
-			render json: { is_success: true }, status: :ok
-		else
-			render json: { is_success: false }, status: :ok
-		end
-	end
-
-	def view_calendar_for_booking 
-	end
-
-
-	def update_calendar_on_booking 
-		# needs to update two calendars 
-		# receive token, user id, and time 
-		# update invitation time 
-		sent_invitation_user = params
-
-		invitation = Invitation.find_by(user_id: 155, invitation_recipient_id: @current_user.id)
 
 		
+
+		# format invitation.scheduled_call field 
+		# what time(t) did the user pick 
+		t = Time.parse(params[:time])
+		# what day/time is it for the user now 
+		d = Time.current.utc + @current_user.time_zone_offset.minutes
+		year = d.year 
+		month = d.month 
+		day = d.day + scheduled_day
+		hour = t.hour 
+		min = t.min 
+
+		scheduled_datetime = DateTime.new(year, month, day, hour, min, 0).utc - @current_user.time_zone_offset.minutes
+		@invitation.scheduled_call = scheduled_datetime
+
+		Calendar.transaction do 
+			Invitation.transaction do 
+				# save both calendars, then update invitation object, send notification 
+				if @inviter.calendar.save! && @current_user.calendar.save! && @invitation.save! && inviter_free && current_user_free
+					render json:{ is_success: true }
+
+				else
+					render json:{ is_success: false, reload: true, inviter_free: inviter_free, current_user_free:current_user_free }
+					raise ActiveRecord::Rollback
+				end
+			end
+		end
+		
+
+		# render json:{ is_success: true, time: utc_time_selected, inviter_status: inviter_status, current_user_status:current_user_status }, status: :ok
 	end
+
+
+  	# use today/tomorrow and time selected to create scheduled_at field 
+  	# update both users calendars  
+
+
+  end
+
+
+
+
+private 
+
+  def show_friends_selected_times(inviter, schedule_day)
+  	arr = ["8:00am", "8:30am", "9:00am", "9:30am","10:00am","10:30am","11:00am","11:30am","12:00pm","12:30pm","1:00pm","1:30pm","2:00pm","2:30pm","3:00pm","3:30pm","4:00pm","4:30pm","5:00pm","5:30pm","6:00pm","6:30pm","7:00pm","7:30pm","8:00pm","8:30pm","9:00pm","9:30pm","10:00pm","10:30pm","11:00pm","11:30pm"]
+  	schedule_normalized = []
+	inviter.calendar.schedule[schedule_day].each do |time, status|
+		if status == "free"
+			standard_time = (Time.parse(time) + @current_user.time_zone_offset.minutes).strftime("%-I:%M%p").downcase
+			schedule_normalized.push(standard_time)
+		end
+	end
+
+	# takes the order of the arr and compares it to that 
+	sorted_schedule = schedule_normalized.sort_by &arr.method(:index)
+	sorted_schedule
+	
+  end
+
+	
+
+	
 	
 end
 
