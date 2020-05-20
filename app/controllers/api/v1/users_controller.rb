@@ -56,14 +56,15 @@ class Api::V1::UsersController < ApplicationController
 
   def save_fullname
     user = User.find_by(access_token: params[:access_token])
-    user.fullname = params[:fullname].downcase
-    user.fullname = user.fullname.titleize
+    user.fullname = params[:fullname].downcase.titleize
+    user.first_name = params[:first_name].downcase.titleize
+    user.last_name = params[:last_name].downcase.titleize
 
     user.verified = false
     user.submitted = false
 
     if user.save 
-      render json: { fullname: user.fullname, is_success: true }, status: :ok
+      render json: { fullname: user.fullname, first_name: user.first_name, last_name: user.last_name, is_success: true }, status: :ok
     else 
       render json: { is_success: false }, status: :ok
     end
@@ -402,6 +403,13 @@ class Api::V1::UsersController < ApplicationController
          render json: {is_success: true, access_token: user.access_token, new_user: true}, status: :ok #university_id: user.university_id, university_name: user.university.university_name
       
         # check if this user has been invited before to create an invitation 
+        text_invitations = TextInvitation.all.where(phone_number: user.phone_number, is_user: false)
+        text_invitations.each do |inv|
+          Invitation.create(user_id: inv.user_id, invitation_recipient_id: user.id)
+          inv.is_user = true 
+          inv.save 
+        end
+
 
       end
 

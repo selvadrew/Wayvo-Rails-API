@@ -60,7 +60,6 @@ Rails.application.routes.draw do
       post 'book_friends_calendar' => 'calendars#book_friends_calendar'
 
 
-
       resources :friendships
       resources :conversations
       resources :outgoings
