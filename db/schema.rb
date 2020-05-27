@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200518040417) do
+ActiveRecord::Schema.define(version: 20200522190517) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -224,6 +224,8 @@ ActiveRecord::Schema.define(version: 20200518040417) do
     t.integer "time_zone_offset"
     t.string "first_name"
     t.string "last_name"
+    t.jsonb "phone_contacts"
+    t.jsonb "username_contacts"
     t.index ["university_id"], name: "index_users_on_university_id"
   end
 

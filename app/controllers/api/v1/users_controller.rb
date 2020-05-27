@@ -1,5 +1,5 @@
 class Api::V1::UsersController < ApplicationController
-  before_action :authenticate_with_token!, only: [:logout, :check_username, :add_phone_number, :get_phone_number, :send_invite_to_catch_up, :save_time_zone]
+  before_action :authenticate_with_token!, only: [:delete_contact, :save_username_contact, :save_phone_contacts, :get_contacts_from_db, :logout, :check_username, :add_phone_number, :get_phone_number, :send_invite_to_catch_up, :save_time_zone, :save_username_contact]
 
   require 'sendgrid-ruby'
   include SendGrid
@@ -347,7 +347,7 @@ class Api::V1::UsersController < ApplicationController
     else 
       #create user 
       unless user 
-        user = User.new(phone_number: phone_number)
+        user = User.new(phone_number: phone_number, phone_contacts: [], username_contacts: [] )
       end
       user.generate_authentication_token
       user.generate_email_code 
@@ -409,8 +409,6 @@ class Api::V1::UsersController < ApplicationController
           inv.is_user = true 
           inv.save 
         end
-
-
       end
 
     else
@@ -419,18 +417,100 @@ class Api::V1::UsersController < ApplicationController
   end
 
 
-def save_contacts
-  user = User.find_by(access_token: params[:access_token])
-  if user 
-    user.contacts = params[:contacts]
-    user.save 
-    render json: { is_success: true}, status: :ok
-  else
-    render json: { is_success: false}, status: :ok
+  def get_contacts_from_db
+    merged_contacts = @current_user.phone_contacts + @current_user.username_contacts
+    render json: { is_success: true, merged_contacts: merged_contacts}, status: :ok
   end
 
-end
-# contacts column, number of texts sent column  
+  def save_phone_contacts
+    @current_user.phone_contacts = params[:contacts]
+    if @current_user.save 
+      merged_contacts = @current_user.phone_contacts + @current_user.username_contacts
+      render json: { is_success: true, merged_contacts: merged_contacts}, status: :ok
+    else
+      render json: { is_success: false}, status: :ok
+    end
+  end
+
+
+  def save_username_contact 
+    #recordID, givenName, familyName, phoneNumbers: [ {"label": "mobile", "number": "6475542523"} ], from_phone: false 
+    user_to_add = User.find_by(username: params[:username]) # the username the current user is trying to add 
+    can_add_for_current_user = true 
+    can_add_current_user = true 
+
+    ###### this is incorrect because it does not check if the username is in the contact list
+    # check if the user already belongs to the user.username_contacts array 
+    merged_contacts = @current_user.username_contacts + @current_user.phone_contacts
+    merged_contacts.each do |obj|
+      if obj["recordID"] == (user_to_add.id.to_s + user_to_add.phone_number.to_s)
+        can_add_for_current_user = false 
+      end 
+    end
+
+    if can_add_for_current_user
+      new_obj = {
+        recordID: (user_to_add.id.to_s + user_to_add.phone_number.to_s),
+        givenName: user_to_add.first_name,
+        familyName: user_to_add.last_name, 
+        phoneNumbers: [ {label: "mobile", number: user_to_add.phone_number} ],
+        from_username: true 
+      }
+
+      @current_user.username_contacts.push(new_obj)
+
+      if @current_user.save 
+        merged_contacts = @current_user.phone_contacts + @current_user.username_contacts
+        render json: { is_success: true, merged_contacts: merged_contacts}, status: :ok
+      end 
+
+    else
+      render json: { is_success: false, error_message: "#{user_to_add.first_name} is already a friend"}, status: :ok
+    end
+
+
+    #silently try to save for the user_to_add.username_contacts as well 
+    other_merged_contacts = user_to_add.username_contacts + user_to_add.phone_contacts
+    other_merged_contacts.each do |obj|
+      if obj["recordID"] == (@current_user.id.to_s + @current_user.phone_number.to_s)
+        can_add_current_user = false
+      end
+    end
+
+    if can_add_current_user
+      new_obj = {
+        recordID: ( @current_user.id.to_s + @current_user.phone_number.to_s),
+        givenName:  @current_user.first_name,
+        familyName:  @current_user.last_name, 
+        phoneNumbers: [ {label: "mobile", number:  @current_user.phone_number} ],
+        from_username: true 
+      }
+
+      user_to_add.username_contacts.push(new_obj)
+      user_to_add.save 
+    end
+
+  end
+
+
+  def delete_contact 
+    contactID = params[:contactID]
+    if params[:from_username]
+      @current_user.username_contacts = @current_user.username_contacts.reject { |contact| contact["recordID"] == contactID }
+    else
+      @current_user.phone_contacts = @current_user.phone_contacts.reject { |contact| contact["recordID"] == contactID }
+    end
+
+    if @current_user.save 
+      merged_contacts = @current_user.username_contacts + @current_user.phone_contacts
+      render json: { is_success: true, merged_contacts: merged_contacts}, status: :ok
+
+    else
+      render json: { is_success: false }, status: :ok
+    end
+    
+  end
+
 
 def save_time_zone
   @current_user.time_zone = params[:time_zone]
@@ -444,7 +524,7 @@ end
 
 def send_invite_to_catch_up
   name_and_number = params[:name_and_number].to_json
-  SendNotificationToCatchUpJob.perform_later(@current_user, name_and_number)
+  SendNotificationToCatchUpJob.perform_now(@current_user, name_and_number)
   render json: { is_success: true}, status: :ok
 end
 

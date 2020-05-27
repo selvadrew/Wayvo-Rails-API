@@ -49,7 +49,7 @@ Rails.application.routes.draw do
       post 'uni_request_update' => 'users#uni_request_update'
       post 'send_sms_code' => 'users#send_sms_code'
       post 'verify_with_sms_code' => 'users#verify_with_sms_code'
-      post 'save_contacts' => 'users#save_contacts'
+      post 'save_phone_contacts' => 'users#save_phone_contacts'
       post 'send_invite_to_catch_up' => 'users#send_invite_to_catch_up'
       post '/incoming_sms' => 'stops#incoming_sms'
       post 'save_time_zone' => 'users#save_time_zone'
@@ -58,6 +58,9 @@ Rails.application.routes.draw do
       post 'all_user_invitation_data' => 'invitations#all_user_invitation_data'
       post 'show_friends_calendar' => 'calendars#show_friends_calendar'
       post 'book_friends_calendar' => 'calendars#book_friends_calendar'
+      post 'get_contacts_from_db' => 'users#get_contacts_from_db'
+      post 'save_username_contact' => 'users#save_username_contact'
+      post 'delete_contact' => 'users#delete_contact'
 
 
       resources :friendships

@@ -26,11 +26,29 @@ class SendNotificationToCatchUpJob < ApplicationJob
 
   			user = User.find_by(phone_number: number)
   			if user 
-				open_invitation = Invitation.find_by(user_id: current_user.id, invitation_recipient_id: user.id, scheduled_call: nil) 
+				can_send = true 
+
+				@invitation_sent = Invitation.find_by(user_id: current_user.id, invitation_recipient_id: user.id) 
+				if @invitation_sent
+					if @invitation_sent.scheduled_call == nil 
+						can_send = false #if theres an open invitation, do nothing
+					elsif @invitation_sent.scheduled_call > (Time.now - 1.hours)
+						can_send = false #if theres an upcoming scheduled call, do nothing 
+					end
+				end
+
+				@invitation_received = Invitation.find_by(user_id: user.id, invitation_recipient_id: current_user.id) 
+				if @invitation_received
+					if @invitation_received.scheduled_call == nil 
+						can_send = false #if theres an open invitation, do nothing
+					elsif @invitation_received.scheduled_call > Time.now
+						can_send = false #if theres an upcoming scheduled call, do nothing 
+					end
+				end
+
 				
-				#if theres an open invitation, do nothing 
 				# could send reminder in the future 
-				unless open_invitation
+				if can_send
 					Invitation.create(user_id: current_user.id, invitation_recipient_id: user.id)
 					puts "send notification" 
 					########## insert notification code 
@@ -55,46 +73,6 @@ class SendNotificationToCatchUpJob < ApplicationJob
 			end
 	  	end
   	end
-
-	# puts cleaned_numbers 
-	# {:fullname=>"John Appleseed", :formatted_number=>"8885555512"}
-
-
-	# # send text, send notification, or do nothing 
-	# cleaned_numbers.each do |name_and_number|
-
-
-	# 	number.strip!
-	# 	user = User.find_by(phone_number: number)
-	# 	if user 
-	# 		open_invitation = Invitation.find_by(user_id: current_user.id, invitation_recipient_id: user.id, scheduled_call: nil) 
-			
-	# 		#if theres an open invitation, do nothing 
-	# 		unless open_invitation
-	# 			Invitation.create(user_id: current_user.id, invitation_recipient_id: user.id)
-	# 			puts "send notification" 
-	# 			# insert notification code 
-	# 		end
-
-	# 	else
-	# 		twilio_formatted_number = "+1" + number 
-
-	# 		#number is not in the "dont text me" list 
-	# 		said_stop = Stop.find_by(number: twilio_formatted_number)
-	# 		#check if already invited by text 
-	# 		already_texted = TextInvitation.find_by(user_id: current_user.id, phone_number: number)
-
-	# 		unless said_stop 
-	# 			unless already_texted
-	# 				TextInvitation.create(user_id: current_user.id, phone_number: number)
-	# 				puts "send text"
-	# 				# insert text code
-
-	# 			end
-	# 		end
-
-	# 	end
-	# end
 
 
   end
