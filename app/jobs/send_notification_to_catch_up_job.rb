@@ -2,6 +2,11 @@ class SendNotificationToCatchUpJob < ApplicationJob
   queue_as :default
 
   def perform(current_user, name_and_number)
+  	require 'fcm'
+    fcm = FCM.new("AAAAAOXsHmg:APA91bFeO5xEEP3Zqkg1Ht3ocwzphQ9uEFGdUHHbRsGHAaVSqEXdJWAUo026ENDbFKJ6Sxy7UFRBYmm-ZH6NOkBGRbZvWhWtm8beW0lRtJivIdoExzfkiYk5QWj98kfTB9-sE4gD6oX-")
+    registration_ids = []
+    
+
   	name_and_number = JSON.parse(name_and_number) 
   	
   	# clean data to remove brackets and hyphens
@@ -50,8 +55,26 @@ class SendNotificationToCatchUpJob < ApplicationJob
 				# could send reminder in the future 
 				if can_send
 					Invitation.create(user_id: current_user.id, invitation_recipient_id: user.id)
-					puts "send notification" 
-					########## insert notification code 
+					
+					##### insert notification code ##### 
+					# Andrew wants to catch up with you! - Open your invitation here to view and join Andrew’s calendar 
+					if current_user.first_name.last == "s"
+						name_ownership = "'"
+					else
+						name_ownership = "'s"
+					end
+
+					@notification = {
+          				title: "#{current_user.first_name} wants to catch up with you!",
+          				body: "Open your invitation here to view and join #{current_user.first_name}#{name_ownership} calendar",
+          				sound: "default"
+        			} 
+
+					registration_ids << user.firebase_token
+
+    				options = { notification: @notification, priority: 'high', data: { upcoming: true } }
+    				response = fcm.send(registration_ids, options)
+
 				end
 
 			else

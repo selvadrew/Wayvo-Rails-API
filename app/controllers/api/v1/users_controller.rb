@@ -383,6 +383,12 @@ class Api::V1::UsersController < ApplicationController
 
 
   def verify_with_sms_code
+
+    require 'fcm'
+    fcm = FCM.new("AAAAAOXsHmg:APA91bFeO5xEEP3Zqkg1Ht3ocwzphQ9uEFGdUHHbRsGHAaVSqEXdJWAUo026ENDbFKJ6Sxy7UFRBYmm-ZH6NOkBGRbZvWhWtm8beW0lRtJivIdoExzfkiYk5QWj98kfTB9-sE4gD6oX-")
+    registration_ids = []
+
+
     user = User.find_by(access_token: params[:access_token])
     if user.email_code == params[:email_code].to_i
       if user.phone_number && user.fullname && user.username 
@@ -408,6 +414,19 @@ class Api::V1::UsersController < ApplicationController
           Invitation.create(user_id: inv.user_id, invitation_recipient_id: user.id)
           inv.is_user = true 
           inv.save 
+
+          @inviter = User.find_by_id(inv.user_id)
+          @notification = {
+            title: "Your Calendar is in demand",
+            body: "#{inv.contact} just joined Wayvo to view your invitation",
+            sound: "default"
+          }
+
+          registration_ids << @inviter.firebase_token
+
+          options = {notification: @notification, priority: 'high' } #data: {upcoming: true}
+          response = fcm.send(registration_ids, options)
+
         end
       end
 
@@ -434,6 +453,10 @@ class Api::V1::UsersController < ApplicationController
 
 
   def save_username_contact 
+    require 'fcm'
+    fcm = FCM.new("AAAAAOXsHmg:APA91bFeO5xEEP3Zqkg1Ht3ocwzphQ9uEFGdUHHbRsGHAaVSqEXdJWAUo026ENDbFKJ6Sxy7UFRBYmm-ZH6NOkBGRbZvWhWtm8beW0lRtJivIdoExzfkiYk5QWj98kfTB9-sE4gD6oX-")
+    registration_ids = []
+
     #recordID, givenName, familyName, phoneNumbers: [ {"label": "mobile", "number": "6475542523"} ], from_phone: false 
     user_to_add = User.find_by(username: params[:username]) # the username the current user is trying to add 
     can_add_for_current_user = true 
@@ -461,11 +484,11 @@ class Api::V1::UsersController < ApplicationController
 
       if @current_user.save 
         merged_contacts = @current_user.phone_contacts + @current_user.username_contacts
-        render json: { is_success: true, merged_contacts: merged_contacts}, status: :ok
+        render json: { is_success: true, merged_contacts: merged_contacts }, status: :ok
       end 
 
     else
-      render json: { is_success: false, error_message: "#{user_to_add.first_name} is already a friend"}, status: :ok
+      render json: { is_success: false, error_message: "#{user_to_add.first_name} is already a friend" }, status: :ok
     end
 
 
@@ -487,7 +510,22 @@ class Api::V1::UsersController < ApplicationController
       }
 
       user_to_add.username_contacts.push(new_obj)
-      user_to_add.save 
+      
+      if user_to_add.save # send notification 
+        @notification = {
+          title: "#{@current_user.fullname} added you as a friend",
+          body: "You can now send #{@current_user.first_name} an invitation to catch up from your Friends list",
+          sound: "default"
+        } 
+
+        registration_ids << user_to_add.firebase_token
+
+        options = { notification: @notification, priority: 'high', data: { invite: true } }
+        response = fcm.send(registration_ids, options)
+        puts response 
+
+      end
+
     end
 
   end

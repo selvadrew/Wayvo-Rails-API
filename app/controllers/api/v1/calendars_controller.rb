@@ -124,6 +124,9 @@ class Api::V1::CalendarsController < ApplicationController
 
 	
 	def book_friends_calendar 
+		require 'fcm'
+    	fcm = FCM.new("AAAAAOXsHmg:APA91bFeO5xEEP3Zqkg1Ht3ocwzphQ9uEFGdUHHbRsGHAaVSqEXdJWAUo026ENDbFKJ6Sxy7UFRBYmm-ZH6NOkBGRbZvWhWtm8beW0lRtJivIdoExzfkiYk5QWj98kfTB9-sE4gD6oX-")
+    	registration_ids = []
 		# params day will be today or tomorrow 
 	  	# params time selected 
 	  	# params updated_at 
@@ -136,7 +139,9 @@ class Api::V1::CalendarsController < ApplicationController
 
 	  	scheduled_date = DateTime.parse(time).utc - @current_user.time_zone_offset.minutes + next_day.day
 	  	utc_selected_time = scheduled_date.to_s
-	  	@inviter_calendar = User.find_by_id(@invitation.user_id).calendar 
+
+	  	@inviter = User.find_by_id(@invitation.user_id)
+	  	@inviter_calendar = @inviter.calendar 
 	  	@invitee_calendar = @current_user.calendar 
 	  	
 
@@ -178,6 +183,31 @@ class Api::V1::CalendarsController < ApplicationController
 
 
 			if send_notification
+				#figure out time in notification
+				notification_text = scheduled_date + @inviter.time_zone_offset.minutes
+    			formatted_time = notification_text.strftime("%-I:%M%p").downcase
+
+    			#figure out day in notificaiton 
+    			notification_day = ""
+    			todays_date_for_user = (Time.current.utc + @inviter.time_zone_offset.minutes).to_date
+    			tomorrows_date_for_user = todays_date_for_user + 1 
+    			if notification_text.to_date == todays_date_for_user
+    				notification_day = "today"
+    			elsif notification_text.to_date == tomorrows_date_for_user
+    				notification_day = "tomorrow"
+    			end
+
+
+				@notification = {
+          				title: "🎉 #{@current_user.first_name} just joined your Calendar 🎉",
+          				body: "Call #{@current_user.first_name} #{notification_day} at #{formatted_time}. Wayvo will send you a reminder shortly before your call.", #Call #{@inviter.first_name} at 10:00am tomorrow (party emoticon). 
+          				sound: "default"
+        		} 
+
+				registration_ids << @inviter.firebase_token
+
+    			options = { notification: @notification, priority: 'high', data: { upcoming: true } }
+    			response = fcm.send(registration_ids, options)
 
 			end
 
