@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200522190517) do
+ActiveRecord::Schema.define(version: 20200602042652) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -96,12 +96,25 @@ ActiveRecord::Schema.define(version: 20200522190517) do
     t.index ["program_id"], name: "index_group_connections_on_program_id"
   end
 
+  create_table "incoming_texts", force: :cascade do |t|
+    t.string "message_sid"
+    t.string "to"
+    t.string "from"
+    t.string "body"
+    t.string "sms_status"
+    t.integer "num_segments"
+    t.integer "num_media"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "invitations", force: :cascade do |t|
     t.integer "user_id"
     t.integer "invitation_recipient_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.datetime "scheduled_call"
+    t.datetime "last_viewed"
   end
 
   create_table "outgoings", force: :cascade do |t|
@@ -226,6 +239,8 @@ ActiveRecord::Schema.define(version: 20200522190517) do
     t.string "last_name"
     t.jsonb "phone_contacts"
     t.jsonb "username_contacts"
+    t.datetime "last_active"
+    t.jsonb "last_active_history", default: []
     t.index ["university_id"], name: "index_users_on_university_id"
   end
 

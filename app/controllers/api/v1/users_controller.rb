@@ -1,5 +1,5 @@
 class Api::V1::UsersController < ApplicationController
-  before_action :authenticate_with_token!, only: [:delete_contact, :save_username_contact, :save_phone_contacts, :get_contacts_from_db, :logout, :check_username, :add_phone_number, :get_phone_number, :send_invite_to_catch_up, :save_time_zone, :save_username_contact]
+  before_action :authenticate_with_token!, only: [:log_active_user, :delete_contact, :save_username_contact, :save_phone_contacts, :get_contacts_from_db, :logout, :check_username, :add_phone_number, :get_phone_number, :send_invite_to_catch_up, :save_time_zone, :save_username_contact]
 
   require 'sendgrid-ruby'
   include SendGrid
@@ -338,12 +338,12 @@ class Api::V1::UsersController < ApplicationController
     user = User.find_by(phone_number: phone_number) 
     new_user = true  
     send_sms = true    
-    message = "to Wayvo"
+    message_text = "to Wayvo"
     
     if user && user.username  
       user.generate_email_code 
       new_user = false 
-      message = "back"
+      message_text = "back"
     else 
       #create user 
       unless user 
@@ -359,25 +359,34 @@ class Api::V1::UsersController < ApplicationController
     end
 
     if send_sms
+      # test_account_sid = Rails.application.secrets.TEST_TWILIO_ACCOUNT_SID
+      # test_auth_token = Rails.application.secrets.TEST_TWILIO_AUTH_TOKEN
+      formatted_phone_number = "+1" + phone_number
+      
       account_sid = ENV.fetch("TWILIO_ACCOUNT_SID") { Rails.application.secrets.TWILIO_ACCOUNT_SID } 
       auth_token = ENV.fetch("TWILIO_AUTH_TOKEN") { Rails.application.secrets.TWILIO_AUTH_TOKEN }   
 
-      test_account_sid = Rails.application.secrets.TEST_TWILIO_ACCOUNT_SID
-      test_auth_token = Rails.application.secrets.TEST_TWILIO_AUTH_TOKEN
+      #lookup client is to check that its a legit number 
+      @client = Twilio::REST::Client.new account_sid, auth_token
+      response = @client.lookups.phone_numbers(formatted_phone_number).fetch(type: ['carrier'])
+      # puts response
+      # puts response.carrier["mobile_country_code"]
 
-      # @client = Twilio::REST::Client.new account_sid, auth_token
-    
-      # formatted_phone_number = "+1" + phone_number
-      # message = @client.messages.create(
-      #   body: "Welcome #{message}. Your Wayvo verification code is: #{user.email_code}",
-      #   to: formatted_phone_number,
-      #   from: "+16474902706" 
-      # )  
+      # why 302 = https://support.twilio.com/hc/en-us/articles/360004563433-Twilio-Lookups-API-is-Not-Returning-Carrier-Data-for-Canadian-Phone-Numbers
+      if response.carrier["mobile_country_code"] == '302' || response.carrier["type"] == 'mobile'
 
-      # puts message.sid
-      puts user.email_code 
-      puts "???????????????????????????"
-      render json: { is_success: true, access_token: user.access_token, new_user: new_user }, status: :ok
+        message = @client.messages.create(
+          body: "Welcome #{message_text}. Your verification code is: #{user.email_code}",
+          to: formatted_phone_number,
+          from: "+16474902706" 
+        )  
+       
+        render json: { is_success: true, access_token: user.access_token, new_user: new_user }, status: :ok
+
+      else
+        render json: { error: "Please use a registered mobile number", is_success: false }, status: :ok
+      end
+
     end   
   end
 
@@ -442,6 +451,11 @@ class Api::V1::UsersController < ApplicationController
   end
 
   def save_phone_contacts
+    from_phone = params[:contacts]
+    from_phone.each do |contact|
+      contact.merge!(last_connected: false, relationship_days: 0 )
+    end
+
     @current_user.phone_contacts = params[:contacts]
     if @current_user.save 
       merged_contacts = @current_user.phone_contacts + @current_user.username_contacts
@@ -462,72 +476,76 @@ class Api::V1::UsersController < ApplicationController
     can_add_for_current_user = true 
     can_add_current_user = true 
 
-    ###### this is incorrect because it does not check if the username is in the contact list
-    # check if the user already belongs to the user.username_contacts array 
-    merged_contacts = @current_user.username_contacts + @current_user.phone_contacts
-    merged_contacts.each do |obj|
-      if obj["recordID"] == (user_to_add.id.to_s + user_to_add.phone_number.to_s)
-        can_add_for_current_user = false 
-      end 
-    end
+    if user_to_add # check if user exists 
+      ###### this is incorrect because it does not check if the username is in the contact list
+      # check if the user already belongs to the user.username_contacts array 
+      merged_contacts = @current_user.username_contacts + @current_user.phone_contacts
+      merged_contacts.each do |obj|
+        if obj["recordID"] == (user_to_add.id.to_s + user_to_add.phone_number.to_s)
+          can_add_for_current_user = false 
+        end 
+      end
 
-    if can_add_for_current_user
-      new_obj = {
-        recordID: (user_to_add.id.to_s + user_to_add.phone_number.to_s),
-        givenName: user_to_add.first_name,
-        familyName: user_to_add.last_name, 
-        phoneNumbers: [ {label: "mobile", number: user_to_add.phone_number} ],
-        from_username: true 
-      }
+      if can_add_for_current_user
+        new_obj = {
+          recordID: (user_to_add.id.to_s + user_to_add.phone_number.to_s),
+          givenName: user_to_add.first_name,
+          familyName: user_to_add.last_name, 
+          phoneNumbers: [ {label: "mobile", number: user_to_add.phone_number} ],
+          from_username: true 
+        }
 
-      @current_user.username_contacts.push(new_obj)
+        @current_user.username_contacts.push(new_obj)
 
-      if @current_user.save 
-        merged_contacts = @current_user.phone_contacts + @current_user.username_contacts
-        render json: { is_success: true, merged_contacts: merged_contacts }, status: :ok
-      end 
+        if @current_user.save 
+          merged_contacts = @current_user.phone_contacts + @current_user.username_contacts
+          render json: { is_success: true, merged_contacts: merged_contacts, success_message: "#{user_to_add.first_name} successfully added" }, status: :ok
+        end 
+
+      else
+        render json: { is_success: false, error_message: "#{user_to_add.first_name} is already a friend" }, status: :ok
+      end
+
+
+      #silently try to save for the user_to_add.username_contacts as well 
+      other_merged_contacts = user_to_add.username_contacts + user_to_add.phone_contacts
+      other_merged_contacts.each do |obj|
+        if obj["recordID"] == (@current_user.id.to_s + @current_user.phone_number.to_s)
+          can_add_current_user = false
+        end
+      end
+
+      if can_add_current_user
+        new_obj = {
+          recordID: ( @current_user.id.to_s + @current_user.phone_number.to_s),
+          givenName:  @current_user.first_name,
+          familyName:  @current_user.last_name, 
+          phoneNumbers: [ {label: "mobile", number:  @current_user.phone_number} ],
+          from_username: true 
+        }
+
+        user_to_add.username_contacts.push(new_obj)
+        
+        if user_to_add.save # send notification 
+          @notification = {
+            title: "#{@current_user.fullname} added you as a friend",
+            body: "You can now send #{@current_user.first_name} an invitation to catch up from your Friends list",
+            sound: "default"
+          } 
+
+          registration_ids << user_to_add.firebase_token
+
+          options = { notification: @notification, priority: 'high', data: { invite: true } }
+          response = fcm.send(registration_ids, options)
+          puts response 
+
+        end
+
+      end
 
     else
-      render json: { is_success: false, error_message: "#{user_to_add.first_name} is already a friend" }, status: :ok
+      render json: { is_success: false, error_message: "Username does not exist" }, status: :ok
     end
-
-
-    #silently try to save for the user_to_add.username_contacts as well 
-    other_merged_contacts = user_to_add.username_contacts + user_to_add.phone_contacts
-    other_merged_contacts.each do |obj|
-      if obj["recordID"] == (@current_user.id.to_s + @current_user.phone_number.to_s)
-        can_add_current_user = false
-      end
-    end
-
-    if can_add_current_user
-      new_obj = {
-        recordID: ( @current_user.id.to_s + @current_user.phone_number.to_s),
-        givenName:  @current_user.first_name,
-        familyName:  @current_user.last_name, 
-        phoneNumbers: [ {label: "mobile", number:  @current_user.phone_number} ],
-        from_username: true 
-      }
-
-      user_to_add.username_contacts.push(new_obj)
-      
-      if user_to_add.save # send notification 
-        @notification = {
-          title: "#{@current_user.fullname} added you as a friend",
-          body: "You can now send #{@current_user.first_name} an invitation to catch up from your Friends list",
-          sound: "default"
-        } 
-
-        registration_ids << user_to_add.firebase_token
-
-        options = { notification: @notification, priority: 'high', data: { invite: true } }
-        response = fcm.send(registration_ids, options)
-        puts response 
-
-      end
-
-    end
-
   end
 
 
@@ -550,21 +568,30 @@ class Api::V1::UsersController < ApplicationController
   end
 
 
-def save_time_zone
-  @current_user.time_zone = params[:time_zone]
-  @current_user.time_zone_offset = params[:time_zone_offset]
-  if @current_user.save
-    render json: { is_success: true}, status: :ok
-  else
-    render json: { is_success: false}, status: :ok
+  def save_time_zone
+    @current_user.time_zone = params[:time_zone]
+    @current_user.time_zone_offset = params[:time_zone_offset]
+    if @current_user.save
+      render json: { is_success: true}, status: :ok
+    else
+      render json: { is_success: false}, status: :ok
+    end
   end
-end
 
-def send_invite_to_catch_up
-  name_and_number = params[:name_and_number].to_json
-  SendNotificationToCatchUpJob.perform_now(@current_user, name_and_number)
-  render json: { is_success: true}, status: :ok
-end
+  def send_invite_to_catch_up
+    name_and_number = params[:name_and_number].to_json
+    SendNotificationToCatchUpJob.perform_now(@current_user, name_and_number)
+    render json: { is_success: true}, status: :ok
+  end
+
+  def log_active_user
+    if @current_user.last_active
+      @current_user.last_active_history.push(@current_user.last_active)
+      @current_user.save 
+    end
+    @current_user.touch(:last_active)
+  end
+
 
 
 end

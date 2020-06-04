@@ -66,7 +66,7 @@ class SendNotificationToCatchUpJob < ApplicationJob
 
 					@notification = {
           				title: "#{current_user.first_name} wants to catch up with you!",
-          				body: "Open your invitation here to view and join #{current_user.first_name}#{name_ownership} calendar",
+          				body: "Open your invitation here to view and join #{current_user.first_name}#{name_ownership} Calendar",
           				sound: "default"
         			} 
 
@@ -88,16 +88,28 @@ class SendNotificationToCatchUpJob < ApplicationJob
 				unless said_stop 
 					unless already_texted
 						TextInvitation.create(user_id: current_user.id, phone_number: number, contact: fullname)
-						puts "send text"
-						########## insert text code
+
+						##### text content #####
+						account_sid = ENV.fetch("TWILIO_ACCOUNT_SID") { Rails.application.secrets.TWILIO_ACCOUNT_SID } 
+						auth_token = ENV.fetch("TWILIO_AUTH_TOKEN") { Rails.application.secrets.TWILIO_AUTH_TOKEN }   
+
+						@client = Twilio::REST::Client.new account_sid, auth_token
+
+						message = @client.messages.create(
+						  body: "#{current_user.fullname} just invited you to catch up. Check out www.wayvo.app",
+						  to: twilio_formatted_number,
+						  from: "+16474902706" 
+						)  
+
+						puts message.sid
+						##### text content #####
+
 					end
 				end
 
+
 			end
-	  	end
+	  	end# if run 
   	end
-
-
   end
-
 end

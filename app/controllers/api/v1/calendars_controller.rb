@@ -118,6 +118,8 @@ class Api::V1::CalendarsController < ApplicationController
   		todays_schedule_ordered = todays_schedule.sort_by &arr.method(:index)
   		tomorrows_schedule_ordered = tomorrows_schedule.sort_by &arr.method(:index)
 
+  		@invitation.touch(:last_viewed)
+
   		render json:{ is_success: true, todays_dates: todays_schedule_ordered, tomorrows_dates: tomorrows_schedule_ordered, updated_at: @inviter_calendar.updated_at }, status: :ok
 		
 	end
