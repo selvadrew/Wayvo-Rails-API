@@ -98,7 +98,7 @@ class SendNotificationToCatchUpJob < ApplicationJob
 						@client = Twilio::REST::Client.new account_sid, auth_token
 
 						message = @client.messages.create(
-						  body: "Howdy! #{current_user.fullname} wants to catch-up with you over a phone call. Choose a time that works for you from #{current_user.first_name}#{name_ownership} calendar in the Wayvo App - www.onelink.to/wayvo.\n\nWayvo is an automated personal assistant that schedules phone calls for you with all the people you care about.",
+						  body: "Howdy! #{current_user.fullname} wants to catch-up with you over a phone call. Choose a time that works for you from #{current_user.first_name}#{name_ownership} calendar in the Wayvo App - www.onelink.to/wayvo.\n\nThe Wayvo app helps you schedule weekly or monthly 1-on-1 phone calls with all the people you care about.",
 						  to: twilio_formatted_number,
 						  from: "+16474902706" 
 						)
