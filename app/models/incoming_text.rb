@@ -1,0 +1,2 @@
+class IncomingText < ApplicationRecord
+end

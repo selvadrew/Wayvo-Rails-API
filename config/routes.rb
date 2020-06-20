@@ -7,10 +7,12 @@ Rails.application.routes.draw do
       post '/facebook' => 'users#facebook'
       post '/email_signup' => 'users#email_signup'
       post '/email_login' => 'users#email_login'
+      post '/verify_with_email_code' => 'users#verify_with_email_code'
       post 'firebase_token' => 'users#store_firebase_token'
       post 'fullname' => 'users#save_fullname'
       post '/username' => 'users#check_username'
       post '/phonenumber' => 'users#add_phone_number'
+      post 'send_email_code' => 'users#send_email_code'
       post '/friendship' => 'friendships#create'
       post '/friends' => 'friendships#show_friends'
       post '/friend_requests' => 'friendships#friend_requests'
@@ -45,6 +47,24 @@ Rails.application.routes.draw do
       post 'get_messages' => 'plans#get_messages'
       post 'get_uni_requests' => 'users#get_uni_requests'
       post 'uni_request_update' => 'users#uni_request_update'
+      post 'send_sms_code' => 'users#send_sms_code'
+      post 'verify_with_sms_code' => 'users#verify_with_sms_code'
+      post 'save_phone_contacts' => 'users#save_phone_contacts'
+      post 'send_invite_to_catch_up' => 'users#send_invite_to_catch_up'
+      post '/incoming_sms' => 'stops#incoming_sms'
+      post 'save_time_zone' => 'users#save_time_zone'
+      post 'get_calendar' => 'calendars#get_calendar'
+      post 'set_calendar' => 'calendars#set_calendar'
+      post 'all_user_invitation_data' => 'invitations#all_user_invitation_data'
+      post 'show_friends_calendar' => 'calendars#show_friends_calendar'
+      post 'book_friends_calendar' => 'calendars#book_friends_calendar'
+      post 'get_contacts_from_db' => 'users#get_contacts_from_db'
+      post 'save_username_contact' => 'users#save_username_contact'
+      post 'delete_contact' => 'users#delete_contact'
+      post 'log_active_user' => 'users#log_active_user'
+      post 'set_relationship' => 'users#set_relationship'
+      post 'time_to_catch_up' => 'invitations#time_to_catch_up'
+
 
       resources :friendships
       resources :conversations
@@ -55,6 +75,7 @@ Rails.application.routes.draw do
       resources :custom_group_connections
       resources :plans
       resources :plan_messages
+      resources :stops
     end
 
 
