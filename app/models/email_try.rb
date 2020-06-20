@@ -1,2 +1,0 @@
-class EmailTry < ApplicationRecord
-end

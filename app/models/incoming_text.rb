@@ -1,2 +1,0 @@
-class IncomingText < ApplicationRecord
-end

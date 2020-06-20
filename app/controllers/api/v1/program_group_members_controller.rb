@@ -15,7 +15,6 @@ class Api::V1::ProgramGroupMembersController < ApplicationController
     if exists 
       exists.program_id = @program.id 
       @user.submitted = true
-      @user.verified = true
       @user.enrollment_date = params[:startYear]
 
       if exists.save && @user.save 
@@ -34,7 +33,6 @@ class Api::V1::ProgramGroupMembersController < ApplicationController
     else
       program_member = ProgramGroupMember.new(program_id: @program.id, user_id: @user.id)
       @user.submitted = true
-      @user.verified = true
       @user.enrollment_date = params[:startYear]
 
       if program_member.save && @user.save 

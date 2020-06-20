@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20200602042652) do
+ActiveRecord::Schema.define(version: 20190830043855) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -21,15 +21,6 @@ ActiveRecord::Schema.define(version: 20200602042652) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["outgoing_id"], name: "index_acceptors_on_outgoing_id"
-  end
-
-  create_table "calendars", force: :cascade do |t|
-    t.bigint "user_id"
-    t.jsonb "schedule"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.jsonb "archive", default: {}
-    t.index ["user_id"], name: "index_calendars_on_user_id"
   end
 
   create_table "custom_group_connections", force: :cascade do |t|
@@ -62,12 +53,6 @@ ActiveRecord::Schema.define(version: 20200602042652) do
     t.index ["user_id"], name: "index_custom_groups_on_user_id"
   end
 
-  create_table "email_tries", force: :cascade do |t|
-    t.string "email"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-  end
-
   create_table "feedbacks", force: :cascade do |t|
     t.bigint "user_id"
     t.datetime "created_at", null: false
@@ -94,27 +79,6 @@ ActiveRecord::Schema.define(version: 20200602042652) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["program_id"], name: "index_group_connections_on_program_id"
-  end
-
-  create_table "incoming_texts", force: :cascade do |t|
-    t.string "message_sid"
-    t.string "to"
-    t.string "from"
-    t.string "body"
-    t.string "sms_status"
-    t.integer "num_segments"
-    t.integer "num_media"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-  end
-
-  create_table "invitations", force: :cascade do |t|
-    t.integer "user_id"
-    t.integer "invitation_recipient_id"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.datetime "scheduled_call"
-    t.datetime "last_viewed"
   end
 
   create_table "outgoings", force: :cascade do |t|
@@ -177,37 +141,12 @@ ActiveRecord::Schema.define(version: 20200602042652) do
     t.index ["university_id"], name: "index_programs_on_university_id"
   end
 
-  create_table "stops", force: :cascade do |t|
-    t.string "number"
-    t.string "message"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-  end
-
-  create_table "text_invitations", force: :cascade do |t|
-    t.bigint "user_id"
-    t.string "phone_number"
-    t.datetime "created_at", null: false
-    t.datetime "updated_at", null: false
-    t.string "contact"
-    t.boolean "is_user", default: false
-    t.index ["user_id"], name: "index_text_invitations_on_user_id"
-  end
-
   create_table "universities", force: :cascade do |t|
     t.string "university_name"
     t.string "university_country"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "university", default: true
-    t.string "email"
-  end
-
-  create_table "universities_users", id: false, force: :cascade do |t|
-    t.bigint "user_id", null: false
-    t.bigint "university_id", null: false
-    t.index ["university_id"], name: "index_universities_users_on_university_id"
-    t.index ["user_id"], name: "index_universities_users_on_user_id"
   end
 
   create_table "users", force: :cascade do |t|
@@ -230,22 +169,9 @@ ActiveRecord::Schema.define(version: 20200602042652) do
     t.integer "enrollment_date"
     t.boolean "verified"
     t.boolean "submitted"
-    t.integer "email_code"
-    t.bigint "university_id"
-    t.text "contacts", array: true
-    t.string "time_zone"
-    t.integer "time_zone_offset"
-    t.string "first_name"
-    t.string "last_name"
-    t.jsonb "phone_contacts"
-    t.jsonb "username_contacts"
-    t.datetime "last_active"
-    t.jsonb "last_active_history", default: []
-    t.index ["university_id"], name: "index_users_on_university_id"
   end
 
   add_foreign_key "acceptors", "outgoings"
-  add_foreign_key "calendars", "users"
   add_foreign_key "custom_group_connections", "custom_groups"
   add_foreign_key "custom_group_members", "custom_groups"
   add_foreign_key "custom_groups", "users"
@@ -259,6 +185,4 @@ ActiveRecord::Schema.define(version: 20200602042652) do
   add_foreign_key "plans", "users"
   add_foreign_key "program_group_members", "programs"
   add_foreign_key "programs", "universities"
-  add_foreign_key "text_invitations", "users"
-  add_foreign_key "users", "universities"
 end
