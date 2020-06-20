@@ -62,6 +62,8 @@ Rails.application.routes.draw do
       post 'save_username_contact' => 'users#save_username_contact'
       post 'delete_contact' => 'users#delete_contact'
       post 'log_active_user' => 'users#log_active_user'
+      post 'set_relationship' => 'users#set_relationship'
+      post 'time_to_catch_up' => 'invitations#time_to_catch_up'
 
 
       resources :friendships

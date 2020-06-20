@@ -1,5 +1,5 @@
 class Api::V1::UsersController < ApplicationController
-  before_action :authenticate_with_token!, only: [:log_active_user, :delete_contact, :save_username_contact, :save_phone_contacts, :get_contacts_from_db, :logout, :check_username, :add_phone_number, :get_phone_number, :send_invite_to_catch_up, :save_time_zone, :save_username_contact]
+  before_action :authenticate_with_token!, only: [:time_to_connect, :set_relationship, :log_active_user, :delete_contact, :save_username_contact, :save_phone_contacts, :get_contacts_from_db, :logout, :check_username, :add_phone_number, :get_phone_number, :send_invite_to_catch_up, :save_time_zone, :save_username_contact]
 
   require 'sendgrid-ruby'
   include SendGrid
@@ -375,16 +375,20 @@ class Api::V1::UsersController < ApplicationController
       # why 302 = https://support.twilio.com/hc/en-us/articles/360004563433-Twilio-Lookups-API-is-Not-Returning-Carrier-Data-for-Canadian-Phone-Numbers
       if response.carrier["mobile_country_code"] == '302' || response.carrier["type"] == 'mobile'
 
-        message = @client.messages.create(
-          body: "Welcome #{message_text}. Your verification code is: #{user.email_code}",
-          to: formatted_phone_number,
-          from: "+16474902706" 
-        )  
+        begin 
+          message = @client.messages.create(
+            body: "Welcome #{message_text}. Your verification code is: #{user.email_code}",
+            to: formatted_phone_number,
+            from: "+16474902706" 
+          )  
+        rescue Twilio::REST::RestError => e
+          puts e 
+        end
        
         render json: { is_success: true, access_token: user.access_token, new_user: new_user }, status: :ok
 
       else
-        render json: { error: "Please use a registered mobile number", is_success: false }, status: :ok
+        render json: { error: "Sorry, only registered Canadian/U.S. mobile numbers are supported", is_success: false }, status: :ok
       end
 
     end   
@@ -452,14 +456,31 @@ class Api::V1::UsersController < ApplicationController
 
   def save_phone_contacts
     from_phone = params[:contacts]
+    from_phone.reject! { |hash| hash[:givenName] == "" && hash[:familyName] == "" || hash[:phoneNumbers] == []  }
+
     from_phone.each do |contact|
-      contact.merge!(last_connected: false, relationship_days: 0 )
+      contact.merge!(last_connected: false, relationship_days: 0)
     end
 
-    @current_user.phone_contacts = params[:contacts]
+
+    
+    # check if the contact exits in db already, if it does, maintain relationship days and last connected data 
+    if @current_user.phone_contacts.any? 
+      from_phone.each do |contact|
+        @current_user.phone_contacts.each do |db_contacts|
+          if contact["recordID"] == db_contacts["recordID"]
+            contact["last_connected"] = db_contacts["last_connected"]
+            contact["relationship_days"] = db_contacts["relationship_days"]
+          end
+        end
+      end
+    end
+
+    @current_user.phone_contacts = from_phone
+      
     if @current_user.save 
       merged_contacts = @current_user.phone_contacts + @current_user.username_contacts
-      render json: { is_success: true, merged_contacts: merged_contacts}, status: :ok
+      render json: { is_success: true, merged_contacts: merged_contacts}, status: :ok 
     else
       render json: { is_success: false}, status: :ok
     end
@@ -492,7 +513,9 @@ class Api::V1::UsersController < ApplicationController
           givenName: user_to_add.first_name,
           familyName: user_to_add.last_name, 
           phoneNumbers: [ {label: "mobile", number: user_to_add.phone_number} ],
-          from_username: true 
+          from_username: true,
+          last_connected: false, 
+          relationship_days: 0
         }
 
         @current_user.username_contacts.push(new_obj)
@@ -521,7 +544,9 @@ class Api::V1::UsersController < ApplicationController
           givenName:  @current_user.first_name,
           familyName:  @current_user.last_name, 
           phoneNumbers: [ {label: "mobile", number:  @current_user.phone_number} ],
-          from_username: true 
+          from_username: true,
+          last_connected: false, 
+          relationship_days: 0
         }
 
         user_to_add.username_contacts.push(new_obj)
@@ -593,17 +618,53 @@ class Api::V1::UsersController < ApplicationController
   end
 
 
+  def set_relationship 
+    if params[:from_username]
+      @current_user.username_contacts.each do |contact| 
+        if contact["recordID"] == params[:id]
+          contact["relationship_days"] = params[:days]
+        end
+      end
+    else
+      @current_user.phone_contacts.each do |contact| 
+        if contact["recordID"] == params[:id]
+          contact["relationship_days"] = params[:days]
+        end
+      end
+    end
+    
+  
+    if @current_user.save 
+      render json: { is_success: true}, status: :ok
+    else 
+      render json: { is_success: false}, status: :ok
+    end
+    
+  end
+
 
 end
 
 
 
 
+private 
 
+def get_merged_contacts(current_user)
+  # get contacts 
+  merged_contacts = current_user.phone_contacts + current_user.username_contacts
 
+  merged_contacts.each do |contact|
+    if contact["last_connected"] == false 
+      contact.merge!(can_send_invite: true)
+    else
+      contact.merge!(can_send_invite: false)
+    end
+  end
 
+  merged_contacts
 
-
+end
 
 
 

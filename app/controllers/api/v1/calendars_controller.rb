@@ -31,8 +31,10 @@ class Api::V1::CalendarsController < ApplicationController
 					@calendar.archive[time] = status 
 				end
 			end
+
+			selected = todays_schedule.length + tomorrows_schedule.length == 0  ? false : true 
 			
-			render json: {is_success: true, todays_schedule: todays_schedule, tomorrows_schedule: tomorrows_schedule}
+			render json: {is_success: true, todays_schedule: todays_schedule, tomorrows_schedule: tomorrows_schedule, selected: selected}
 			
 			@calendar.save 	
 			@calendar.touch 
@@ -44,7 +46,7 @@ class Api::V1::CalendarsController < ApplicationController
 				archive: {}
 		)
 		@current_user.calendar.save 
-		render json: {is_success: true, todays_schedule: {}, tomorrows_schedule: {} }, status: :ok 
+		render json: {is_success: true, todays_schedule: {}, tomorrows_schedule: {}, selected: false }, status: :ok 
 		end
 
 	end 
@@ -172,10 +174,13 @@ class Api::V1::CalendarsController < ApplicationController
 			@invitation.scheduled_call = scheduled_date
 
 			send_notification = false 
+			update_last_connected = false 
 			if inviter_free && invitee_free
 				if @inviter_calendar.save! && @invitee_calendar.save! && @invitation.save!  
 					render json:{ is_success: true }
 					send_notification = true  
+					update_last_connected = true 
+
 				else
 					render json:{ is_success: false, reload: true, error: "saving error" }
 				end
@@ -213,6 +218,7 @@ class Api::V1::CalendarsController < ApplicationController
 
 			end
 
+			
 			# need to use transaction for the above - https://api.rubyonrails.org/classes/ActiveRecord/Transactions/ClassMethods.html
 			# Calendar.transaction do 
 			# 	Invitation.transaction do 
