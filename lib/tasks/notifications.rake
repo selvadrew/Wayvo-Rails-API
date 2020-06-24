@@ -18,11 +18,11 @@ namespace :notifications do
   end
 
   # rake notifications:reminder_fifteen_minutes
-  task reminder_fifteen_minutes: :environment do 
+  task reminder_ten_minutes: :environment do 
     require 'fcm'
     fcm = FCM.new("AAAAAOXsHmg:APA91bFeO5xEEP3Zqkg1Ht3ocwzphQ9uEFGdUHHbRsGHAaVSqEXdJWAUo026ENDbFKJ6Sxy7UFRBYmm-ZH6NOkBGRbZvWhWtm8beW0lRtJivIdoExzfkiYk5QWj98kfTB9-sE4gD6oX-")
 
-    upcoming_calls = Invitation.all.where("scheduled_call > ?", Time.now.utc).where("scheduled_call < ?", Time.now.utc + 25.minutes)
+    upcoming_calls = Invitation.all.where("scheduled_call > ?", Time.now.utc).where("scheduled_call < ?", Time.now.utc + 15.minutes)
 
     upcoming_calls.each do |upcoming|
       first_user = User.find_by_id(upcoming.user_id)
@@ -35,13 +35,13 @@ namespace :notifications do
 
       @first_notification = {
         title: "Reminder", 
-        body: "Call with #{second_user.first_name} in 15 minutes 🙌",
+        body: "Call with #{second_user.first_name} in 10 minutes 🙌",
         sound: "default"
       }
 
       @second_notification = {
         title: "Reminder:",
-        body: "Call with #{first_user.first_name} in 15 minutes 🙌",
+        body: "Call with #{first_user.first_name} in 10 minutes 🙌",
         sound: "default"
       }
 
