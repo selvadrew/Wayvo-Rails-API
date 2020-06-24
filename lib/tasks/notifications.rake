@@ -17,4 +17,41 @@ namespace :notifications do
   	# puts "worked"
   end
 
+  # rake notifications:reminder_fifteen_minutes
+  task reminder_fifteen_minutes: :environment do 
+    require 'fcm'
+    fcm = FCM.new("AAAAAOXsHmg:APA91bFeO5xEEP3Zqkg1Ht3ocwzphQ9uEFGdUHHbRsGHAaVSqEXdJWAUo026ENDbFKJ6Sxy7UFRBYmm-ZH6NOkBGRbZvWhWtm8beW0lRtJivIdoExzfkiYk5QWj98kfTB9-sE4gD6oX-")
+
+    upcoming_calls = Invitation.all.where("scheduled_call > ?", Time.now.utc).where("scheduled_call < ?", Time.now.utc + 25.minutes)
+
+    upcoming_calls.each do |upcoming|
+      first_user = User.find_by_id(upcoming.user_id)
+      second_user = User.find_by_id(upcoming.invitation_recipient_id)
+
+      first_registration_id = []
+      second_registration_id = []
+      first_registration_id << first_user.firebase_token 
+      second_registration_id << second_user.firebase_token
+
+      @first_notification = {
+        title: "Reminder", 
+        body: "Call with #{second_user.first_name} in 15 minutes 🙌",
+        sound: "default"
+      }
+
+      @second_notification = {
+        title: "Reminder:",
+        body: "Call with #{first_user.first_name} in 15 minutes 🙌",
+        sound: "default"
+      }
+
+      first_options = { notification: @first_notification, priority: 'high', data: { upcoming: true } } 
+      first_response = fcm.send(first_registration_id, first_options)
+
+      second_options = { notification: @second_notification, priority: 'high', data: { upcoming: true } } 
+      second_response = fcm.send(second_registration_id, second_options)
+    end
+
+  end
+
 end
